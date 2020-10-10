@@ -8,9 +8,13 @@ def main():
     print("||Initializing||")
     print("----------------")
     now = datetime.now()
-    compile_java('Hi.java')
+    programName='Hi.java'
+    compile_java(programName)
     compiled_now = datetime.now()
-    execute_java('Hi.java', 'Jon')
+    prima = input("Inserisci prima riga: ")
+    seconda = input("Inserisci seconda riga: ")
+    completa = prima+'\n'+seconda
+    execute_java(programName, completa)
     executed_now = datetime.now()
     print("  ||")
     print("  ||")
@@ -35,7 +39,8 @@ def compile_java(java_file):
 
 def execute_java(java_file, stdin):
     java_class,ext = os.path.splitext(java_file)
-    cmd = ['java', java_class]
+    print(java_class)
+    cmd = ['java', java_class, input("Inserisci IP: "), input("Inserisci Porta: "), input("Inserisci File: ")]
     proc = subprocess.Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
     stdout,stderr = proc.communicate(stdin.encode())
     print (stdout.decode())
