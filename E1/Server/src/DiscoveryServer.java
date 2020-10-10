@@ -38,10 +38,11 @@ public class DiscoveryServer {
 
 		packet = new DatagramPacket(buff, BUFF_LENGTH);
 		ByteArrayInputStream biStream = null;
-		DataInputStream diStream = null;
-		ByteArrayOutputStream boStream = null;
-		DataOutputStream doStream = null;
+		DataInputStream diStream = new DataInputStream(biStream);
+		ByteArrayOutputStream boStream = new ByteArrayOutputStream();
+		DataOutputStream doStream = new DataOutputStream(boStream);
 		map.entrySet().stream().forEach(System.out::println);
+		byte [] output = null;
 		while (true) {
 			packet.setData(buff);
 			try {
@@ -52,17 +53,14 @@ public class DiscoveryServer {
 			}
 			biStream = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
 			diStream = new DataInputStream(biStream);
-			boStream = new ByteArrayOutputStream();
-			doStream = new DataOutputStream(boStream);
 			try {
 				doStream.writeInt(map.getOrDefault(diStream.readUTF(), -1));
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 				break;
 			}
-			buff = boStream.toByteArray();
-			packet.setData(buff, 0, buff.length);
+			output = boStream.toByteArray();
+			packet.setData(output, 0, output.length);
 			try {
 				socket.send(packet);
 			} catch (IOException e) {

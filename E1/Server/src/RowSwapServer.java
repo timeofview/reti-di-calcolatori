@@ -22,6 +22,7 @@ public class RowSwapServer extends Thread {
 	private DatagramPacket packet = null;
 	private int result = -1;
 	private byte[] buff = new byte[BUFF_LENGTH];
+	private byte[] output = null;
 	private ByteArrayInputStream biStream = null;
 	private DataInputStream diStream = null;
 	private int row1, row2 = 0;
@@ -37,6 +38,8 @@ public class RowSwapServer extends Thread {
 		try {
 			socket = new DatagramSocket(port);
 			packet = new DatagramPacket(buff, buff.length);
+			boStream = new ByteArrayOutputStream();
+			doStream = new DataOutputStream(boStream);
 		} catch (SocketException e) {
 			e.printStackTrace();
 			System.exit(2);
@@ -114,15 +117,13 @@ public class RowSwapServer extends Thread {
 			textOut.renameTo(new File(path));
 			result = 1;
 
-			boStream = new ByteArrayOutputStream();
-			doStream = new DataOutputStream(boStream);
 			try {
 				doStream.writeInt(result);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			buff = boStream.toByteArray();
-			packet.setData(buff, 0, buff.length);
+			output = boStream.toByteArray();
+			packet.setData(output, 0, output.length);
 			try {
 				socket.send(packet);
 			} catch (IOException e) {
