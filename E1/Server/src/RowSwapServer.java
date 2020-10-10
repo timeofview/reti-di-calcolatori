@@ -53,8 +53,8 @@ public class RowSwapServer extends Thread {
 			try {
 				biStream = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
 				diStream = new DataInputStream(biStream);
-				row1 = diStream.read();
-				row2 = diStream.read();
+				row1 = diStream.readInt();
+				row2 = diStream.readInt();
 			} catch (IOException e) {
 				e.printStackTrace();
 				result = -1;
@@ -117,12 +117,12 @@ public class RowSwapServer extends Thread {
 			boStream = new ByteArrayOutputStream();
 			doStream = new DataOutputStream(boStream);
 			try {
-				doStream.write(result);
+				doStream.writeInt(result);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 			buff = boStream.toByteArray();
-			packet.setData(buff);
+			packet.setData(buff, 0, buff.length);
 			try {
 				socket.send(packet);
 			} catch (IOException e) {

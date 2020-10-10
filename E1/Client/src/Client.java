@@ -8,7 +8,6 @@ import java.io.InputStreamReader;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.nio.ByteBuffer;
 
 //            0    1       2
 // RSClient IPDS portDS fileName
@@ -91,16 +90,16 @@ public class Client {
         		System.err.println("Errore: il Discovery Server non ha rintracciato un server valido!");
         		System.exit(1);
             }
-            
+            packet.setPort(port);
             // Chiedo all'utente i due file
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             
             // Riga 1
             System.out.print("Inserisci la riga 1: ");
             int row1 = -1;
-            try{
-                row1 = Integer.parseInt(reader.readLine());
-            }catch(NumberFormatException e) {
+			try {
+				row1 = Integer.parseInt(reader.readLine().trim());
+			}catch(NumberFormatException e) {
             	System.err.println("Errore: devi inserire un numero di riga!");
 				
             	System.exit(0);
@@ -110,7 +109,7 @@ public class Client {
             System.out.print("\nInserisci la riga 2: ");
             int row2 = -1;
             try{
-                row2 = Integer.parseInt(reader.readLine());
+                row2 = Integer.parseInt(reader.readLine().trim());
             }catch(NumberFormatException e) {
             	System.err.println("Errore: devi inserire un numero di riga!");
 				
@@ -144,7 +143,7 @@ public class Client {
         	
         	// Estrazione delle informazioni dal pacchetto ricevuto
         	biStream = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
-        	diStream = new DataInputStream(diStream);
+        	diStream = new DataInputStream(biStream);
         	
         	// Ottengo la rispsota dal server
         	int result = diStream.readInt();
