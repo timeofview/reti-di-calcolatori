@@ -14,7 +14,7 @@ import java.nio.ByteBuffer;
 // RSClient IPDS portDS fileName
 //
 // RDC01
-public class RSClient {
+public class Client {
 
 	// Costanti
     private final static int TIMEOUT = 30000;
@@ -53,17 +53,18 @@ public class RSClient {
             client.setSoTimeout(TIMEOUT); // Setto il timeout massimo
             
             byte[] sendData = new byte[MAX_BUF]; // Creo l'array di byte
-            sendData = args[2].getBytes(); // Ottengo i byte contenenti il nomeFile
-            
             
             // Converto la porta in intero
             int port = -1; 
             try {
-               port = Integer.parseInt(args[1].trim());
+               port = Integer.parseInt(args[1]);
             }catch (NumberFormatException e) {
                e.printStackTrace();
             }
-            
+            ByteArrayOutputStream boStream = new ByteArrayOutputStream();
+            DataOutputStream doStream = new DataOutputStream(boStream);
+            doStream.writeUTF(args[2]);
+            sendData = boStream.toByteArray();
             
             // Ottengo l'ip del Disovery Server
             InetAddress IPAddress = InetAddress.getByName(args[0]);
@@ -72,15 +73,16 @@ public class RSClient {
             // Invio il pacchetto
             client.send(sendPacket);
             
-            
             // Creo l'array di byte contente il messaggio del Discovery Server
             byte[] receiveData = new byte[MAX_BUF];
             // Creo il pacchetto contenente la risposta
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, MAX_BUF);
+            ByteArrayInputStream biStream = new ByteArrayInputStream(receivePacket.getData(), 0, receivePacket.getLength());
+            DataInputStream diStream = new DataInputStream(biStream);
            	// Ottengo la risposta
             client.receive(receivePacket);
             // Ottengo l'intero che mi descrive la porta
-            int receivePort = ByteBuffer.wrap(receiveData).getInt();
+            int receivePort = diStream.readInt();
             
             
             // Controllo che la porta ricevuta sia valida 

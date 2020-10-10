@@ -55,10 +55,11 @@ public class DiscoveryServer {
 			boStream = new ByteArrayOutputStream();
 			doStream = new DataOutputStream(boStream);
 			try {
-				boStream.write(map.getOrDefault(diStream.readUTF(), -1));
+				doStream.writeInt(map.getOrDefault(diStream.readUTF(), -1));
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+				break;
 			}
 			buff = boStream.toByteArray();
 			packet.setData(buff, 0, buff.length);
@@ -67,8 +68,10 @@ public class DiscoveryServer {
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+				break;
 			}
 		}
+		socket.close();
 
 	}
 
