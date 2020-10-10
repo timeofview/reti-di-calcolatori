@@ -47,12 +47,15 @@ public class Client {
 
         // Socket 
         try {
-        	
+            DatagramPacket packet = null;
             // Creazione Socket
-            DatagramSocket client = new DatagramSocket(); // Creo la socket del client
-            client.setSoTimeout(TIMEOUT); // Setto il timeout massimo
-            
-            byte[] sendData = new byte[MAX_BUF]; // Creo l'array di byte
+            DatagramSocket socket = new DatagramSocket(); // Creo la socket del client
+            socket.setSoTimeout(TIMEOUT); // Setto il timeout massimo
+            ByteArrayOutputStream boStream = null;
+            DataOutputStream doStream =null;
+            ByteArrayInputStream biStream = null;
+            DataInputStream diStream = null;
+            byte[] buff = new byte[MAX_BUF]; // Creo l'array di byte
             
             // Converto la porta in intero
             int port = -1; 
@@ -61,45 +64,42 @@ public class Client {
             }catch (NumberFormatException e) {
                e.printStackTrace();
             }
-            ByteArrayOutputStream boStream = new ByteArrayOutputStream();
-            DataOutputStream doStream = new DataOutputStream(boStream);
+            boStream = new ByteArrayOutputStream();
+            doStream = new DataOutputStream(boStream);
             doStream.writeUTF(args[2]);
-            sendData = boStream.toByteArray();
+            buff = boStream.toByteArray();
             
             // Ottengo l'ip del Disovery Server
             InetAddress IPAddress = InetAddress.getByName(args[0]);
             // Creo il pacchetto da inviare 
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
+            packet = new DatagramPacket(buff, buff.length, IPAddress, port);
             // Invio il pacchetto
-            client.send(sendPacket);
+            socket.send(packet);
             
-            // Creo l'array di byte contente il messaggio del Discovery Server
-            byte[] receiveData = new byte[MAX_BUF];
-            // Creo il pacchetto contenente la risposta
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, MAX_BUF);
-            ByteArrayInputStream biStream = new ByteArrayInputStream(receivePacket.getData(), 0, receivePacket.getLength());
-            DataInputStream diStream = new DataInputStream(biStream);
+
+            biStream = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
+            diStream = new DataInputStream(biStream);
+            packet.setData(buff);
            	// Ottengo la risposta
-            client.receive(receivePacket);
+            socket.receive(packet);
             // Ottengo l'intero che mi descrive la porta
-            int receivePort = diStream.readInt();
+            port = diStream.readInt();
             
             
             // Controllo che la porta ricevuta sia valida 
-            if(receivePort < 0) {
+            if(port < 0) {
         		System.err.println("Errore: il Discovery Server non ha rintracciato un server valido!");
-				
-        		System.exit(0);
+        		System.exit(1);
             }
             
             // Chiedo all'utente i due file
-            BufferedReader brUserInput = new BufferedReader(new InputStreamReader(System.in));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             
             // Riga 1
             System.out.print("Inserisci la riga 1: ");
-            int numRigaUno = -1;
+            int row1 = -1;
             try{
-            	numRigaUno = Integer.parseInt(brUserInput.readLine().trim());
+                row1 = Integer.parseInt(reader.readLine());
             }catch(NumberFormatException e) {
             	System.err.println("Errore: devi inserire un numero di riga!");
 				
@@ -108,9 +108,9 @@ public class Client {
             
             // Riga 2
             System.out.print("\nInserisci la riga 2: ");
-            int numRigaDue = -1;
+            int row2 = -1;
             try{
-            	numRigaUno = Integer.parseInt(brUserInput.readLine().trim());
+                row2 = Integer.parseInt(reader.readLine());
             }catch(NumberFormatException e) {
             	System.err.println("Errore: devi inserire un numero di riga!");
 				
@@ -118,42 +118,42 @@ public class Client {
             }
             
             // Creo i due Stream
-            ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-        	DataOutputStream dataOut = new DataOutputStream(byteOut);
+            boStream = new ByteArrayOutputStream();
+        	doStream = new DataOutputStream(boStream);
         	
         	// Scrivo i due interi nella Stream
-        	dataOut.writeInt(numRigaUno);
-        	dataOut.writeInt(numRigaDue);
+            doStream.writeInt(row1);
+            doStream.writeInt(row2);
         	
         	// Metto nell'array il contenuto di byteOut
-        	sendData = byteOut.toByteArray(); 	
+            buff = boStream.toByteArray();
         	
         	// Riempimento del paccheto con i dati
-        	sendPacket.setData(sendData);
+        	packet.setData(buff);
         	
         	// Invio del pacchetto al server
-        	client.send(sendPacket);
+            socket.send(packet);
             
         	//dataOut.close(); // Chiudo il DataOutputStream
         	
             	// Preparo il pacchetto di ricezione e gli passo come contenitore l'array di byte
-        	receivePacket.setData(receiveData);
+        	packet.setData(buff);
         	
         	// Ricevo il pacchetto
-        	client.receive(receivePacket);
+            socket.receive(packet);
         	
         	// Estrazione delle informazioni dal pacchetto ricevuto
-        	ByteArrayInputStream byteIn = new ByteArrayInputStream(receivePacket.getData(), 0, receivePacket.getLength());
-        	DataInputStream dataIn = new DataInputStream(byteIn);
+        	biStream = new ByteArrayInputStream(packet.getData(), 0, packet.getLength());
+        	diStream = new DataInputStream(diStream);
         	
         	// Ottengo la rispsota dal server
-        	int esitoOperazione = dataIn.readInt();
+        	int result = diStream.readInt();
         	
         	// Stampo a video il risultato
-        	System.out.println("Risposta del Server: " + esitoOperazione);
+        	System.out.println("Risposta del Server: " + result);
         	
         	// Chiudo la Socket del Client
-        	client.close(); 
+            socket.close();
         	
             
         } catch (IOException e) {
