@@ -134,7 +134,7 @@ public class RSClient {
             
         	//dataOut.close(); // Chiudo il DataOutputStream
         	
-            // Preparo il pacchetto di ricezione e gli passo come contenitore l'array di byte
+            	// Preparo il pacchetto di ricezione e gli passo come contenitore l'array di byte
         	receivePacket.setData(receiveData);
         	
         	// Ricevo il pacchetto
