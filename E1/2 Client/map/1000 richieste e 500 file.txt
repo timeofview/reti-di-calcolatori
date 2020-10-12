@@ -1,0 +1,4 @@
+2 Client con 1000 richieste e 500 file gestito con mappa
+Media:  164.860
+Max value:  293.0
+Min value:  120.999

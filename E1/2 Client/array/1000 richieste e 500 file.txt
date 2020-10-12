@@ -1,0 +1,4 @@
+2 Client con 1000 richieste e 500 file gestito con array e ricerca lineare
+Media:  152.792
+Max value:  199.002
+Min value:  113.999
