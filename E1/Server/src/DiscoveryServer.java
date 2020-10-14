@@ -36,9 +36,9 @@ public class DiscoveryServer {
 		int logicLength = 0;
 		boolean found = false;
 
-		for (int i = 1; i < length; i+=2) {
+		for (int i = 1; i < length; i += 2) {
 			found = false;
-			port = Integer.parseInt(args[i+1]);
+			port = Integer.parseInt(args[i + 1]);
 			for (int j = 0; j < logicLength; j++) {
 				if (files[j] == args[i] || ports[j] == port) {
 					found = true;
@@ -50,7 +50,6 @@ public class DiscoveryServer {
 				ports[logicLength++] = port;
 				new RowSwapServer(args[i], port).start();
 			}
-
 		}
 		/*
 		 * for (int i = 1; i < length; i += 2) { port = Integer.parseInt(args[i + 1]);
@@ -85,6 +84,10 @@ public class DiscoveryServer {
 						break;
 					}
 				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			try {
 				doStream.writeInt(port);
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -95,7 +98,6 @@ public class DiscoveryServer {
 			try {
 				socket.send(packet);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 				break;
 			}

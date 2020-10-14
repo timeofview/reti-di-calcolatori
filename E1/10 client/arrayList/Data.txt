@@ -1,4 +1,0 @@
-10 Client con 1000 richieste e 500 file gestito con arrayList
-Media:  544.435
-Max value:  881.999
-Min value:  156.0

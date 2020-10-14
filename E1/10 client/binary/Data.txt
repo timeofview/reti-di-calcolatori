@@ -1,4 +1,0 @@
-10 Client con 1000 richieste e 500 file gestito con array e ricerca binaria
-Media:  708.507
-Max value:  1513.0
-Min value:  198.995

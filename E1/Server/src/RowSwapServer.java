@@ -73,7 +73,7 @@ public class RowSwapServer extends Thread {
 				BufferedReader buff = new BufferedReader(new FileReader(path));
 
 				while ((c = buff.readLine()) != null) {
-					currentRow++; // aumento il numero della riga corrente
+					currentRow++;
 					if (currentRow == row1)
 						rowOne = c;
 					else if (currentRow == row2)
@@ -112,7 +112,7 @@ public class RowSwapServer extends Thread {
 				Files.deleteIfExists(Paths.get(path));
 			} catch (IOException e) {
 				System.out.println("File non rimosso");
-			} // chiudere per non creare problemi con la rename che fallirebbe altrimenti
+			} 
 
 			textOut.renameTo(new File(path));
 			result = 1;
@@ -127,7 +127,6 @@ public class RowSwapServer extends Thread {
 			try {
 				socket.send(packet);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
