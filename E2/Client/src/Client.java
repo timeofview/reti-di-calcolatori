@@ -76,11 +76,11 @@ public class Client {
 					dataOutputStream.writeUTF(fname);
 					dataOutputStream.writeLong(f.length());
 					System.out.println("Attendo risposta dal Server...");
-					accepted=dataInputStream.readInt();
 					if(accepted>=0) {
+					accepted=dataInputStream.readInt();
 						buff = new BufferedReader(new FileReader(f));
-						while((temp = buff.readLine())!=null) { // da ragionare
 							dataOutputStream.writeUTF(temp);
+						while((temp = buff.readLine())!=null) { // da ragionare
 						}
 						
 						buff.close();
