@@ -1,58 +1,62 @@
-
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 
 public class Server {
 
-	public static final int PORT = 54321; // porta di default
+	// Default Port
+	public static final int PORT = 54321; 
 
 	public static void main(String[] args) {
-
 		int port = -1;
-;
-		FileOutputStream outFile = null;
-		Byte buffer = null;
-		// controllo argomenti
+		
+		// Arguments Check
 		try {
 			if (args.length == 1)
 				port = Integer.parseInt(args[0]);
 			else if (args.length == 0)
 				port = PORT;
 			else {
-				System.out.println("Usage: Server N_porta(optional)");
+				System.out.println("Usage: Server portNumber[optional]");
 				System.exit(1);
 			}
-
 		} catch (Exception e) {
-			System.out.println("Eccezione durante il controllo degli argomenti");
+			System.out.println("Exception during Arguments Check");
 		}
-
-		long spazioDisponibile = new File("/").getUsableSpace();
+		
+		//TODO
+		//long usableSpace = new File("/").getUsableSpace();
+		
 		ServerSocket serverSocket = null;
-		Socket socket = null;
 
+		// Server Socket Creation
 		try {
 			serverSocket = new ServerSocket(port);
 			serverSocket.setReuseAddress(true);
-
+		} catch (SocketException se) {
+			se.printStackTrace();
+			System.exit(1);
 		} catch (IOException e) {
 			e.printStackTrace();
-			System.exit(1);
+			System.exit(2);
 		}
+		
+		Socket socket;
+		
+		System.out.println("Server has been Correctly Initialized");
+		
+		// Main Loop
 		while (true) {
 			try {
 				socket = serverSocket.accept();
+				System.out.println("Socket has been Correctly Accepted");
 				socket.setSoTimeout(30000);
 				new ServerThread(socket).start();
 			} catch (IOException e) {
 				e.printStackTrace();
+				//Doesn't Exit
 			}
-
-		}
-		
+		}	
 	}
-
 }
