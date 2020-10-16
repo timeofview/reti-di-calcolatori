@@ -13,46 +13,55 @@ public class ServerThread extends Thread {
 	}
 
 	public void run() {
-		int buffer = 0;
+		int buffer;
 		int result;
 		String fileName;
-		long dim = 9999999999L;
+		long maxDim = 1024;
+		long dim = 0; 
 		DataInputStream dataInputStream = null;
 		DataOutputStream dataOutputStream = null;
 		FileOutputStream outFile = null;
+		
 		try {
 			dataInputStream = new DataInputStream(socket.getInputStream());
 			dataOutputStream = new DataOutputStream(socket.getOutputStream());
-
-			// leggo cosa mi ha inviato il Client
+			System.out.println("Thread has been Correctly Initialized");
+			
+			// Reading from Client
 			fileName = dataInputStream.readUTF();
 			dim = dataInputStream.readLong();
+			System.out.println("fileName has been Correctly Read from Client "+fileName);
+			System.out.println("fileDim has been Correctly Read from Client "+dim);
 			
-			// controllo per vedere se accettare l'invio del file da parte del Client
-			if (Files.exists(Paths.get(fileName))) {
+			// Deciding if Accepting Request
+			if (Files.exists(Paths.get(fileName))||dim>maxDim) {
 				result = -1;
-
 			} else {
 				result = 1;
 			}
 
+			// Sending result
 			dataOutputStream.writeInt(result);
+			System.out.println("Sending result to Client " + result);
+			
+			// If Everything is fine
 			if (result > 0) {
+				
+				// Receiving the File Byte per Byte
 				outFile = new FileOutputStream(fileName);
-				// ricezione File byte per byte
-				int count = 0;
-				while ((buffer = dataInputStream.read()) >= 0) { // EOF valore negativo
+				System.out.println("Receiving from Client and Writing");
+				// Read Until EOF = -1
+				while ((buffer = dataInputStream.read()) >= 0) {
 					outFile.write(buffer);
 				}
+				
+				// Closing Communications and Flushing Stream
 				outFile.flush();
-
 				outFile.close();
-
+				System.out.println("A task has been Completed");
 			}
-
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
 	}
 }
