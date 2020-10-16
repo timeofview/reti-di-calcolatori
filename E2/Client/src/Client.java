@@ -7,6 +7,7 @@ public class Client {
 	
 	public static void main(String[] args) {
 		//CONTROLLO ARGOMENTI
+		
 		if (args.length != 2) {
 			System.out.println("Usage: Client Address Port");
 			return;
@@ -29,8 +30,6 @@ public class Client {
 		Socket s = null;
 		DataOutputStream dos = null;
 		DataInputStream dis = null;
-		
-		
 		String nameDir = null;
 		
 		
@@ -66,21 +65,21 @@ public class Client {
 			s.setSoTimeout(30000);
 			dos=new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
 			dis=new DataInputStream(new BufferedInputStream(s.getInputStream()));
-			int accettato;
-			long length=0;
+			int accepted;
+		
 			File[] files = new File(nameDir).listFiles(); //comprende anche le directory
 			BufferedReader buff;
 			String temp;
 			for(File f : files) {
 				if(f.isFile()) {
-					length = f.length();
-					dos.writeUTF(nameDir);
-					dos.writeLong(length);
+					
+					dos.writeUTF(f.getName());
+					dos.writeLong(f.length());
 					System.out.println("Attendo risposta dal Server...");
-					accettato=dis.read();
-					if(accettato>=0) {
+					accepted=dis.readInt();
+					if(accepted>=0) {
 						buff = new BufferedReader(new FileReader(f));
-						while((temp = buff.readLine())!=null) {
+						while((temp = buff.readLine())!=null) { // da ragionare
 							dos.writeUTF(temp);
 						}
 						
