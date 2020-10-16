@@ -7,6 +7,7 @@ public class Client {
 	
 	public static void main(String[] args) {
 		//CONTROLLO ARGOMENTI
+		
 		if (args.length != 2) {
 			System.out.println("Usage: Client Address Port");
 			return;
@@ -26,11 +27,9 @@ public class Client {
 		}
 		
 		
-		Socket s = null;
-		DataOutputStream dos = null;
-		DataInputStream dis = null;
-		
-		
+		Socket socket = null;
+		DataOutputStream dataOutputStream = null;
+		DataInputStream dataInputStream = null;
 		String nameDir = null;
 		
 		
@@ -62,26 +61,26 @@ public class Client {
 		//COMUNICAZIONE
 		
 		try {
-			s = new Socket(addr, port);
-			s.setSoTimeout(30000);
-			dos=new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
-			dis=new DataInputStream(new BufferedInputStream(s.getInputStream()));
-			int accettato;
-			long length=0;
+			socket = new Socket(addr, port);
+			socket.setSoTimeout(30000);
+			dataOutputStream=new DataOutputStream(socket.getOutputStream());
+			dataInputStream=new DataInputStream(socket.getInputStream());
+			int accepted;
+		
 			File[] files = new File(nameDir).listFiles(); //comprende anche le directory
 			BufferedReader buff;
 			String temp;
 			for(File f : files) {
 				if(f.isFile()) {
-					length = f.length();
-					dos.writeUTF(nameDir);
-					dos.writeLong(length);
+					String fname = f.getName();
+					dataOutputStream.writeUTF(fname);
+					dataOutputStream.writeLong(f.length());
 					System.out.println("Attendo risposta dal Server...");
-					accettato=dis.read();
-					if(accettato>=0) {
+					accepted=dataInputStream.readInt();
+					if(accepted>=0) {
 						buff = new BufferedReader(new FileReader(f));
-						while((temp = buff.readLine())!=null) {
-							dos.writeUTF(temp);
+						while((temp = buff.readLine())!=null) { // da ragionare
+							dataOutputStream.writeUTF(temp);
 						}
 						
 						buff.close();
@@ -92,9 +91,9 @@ public class Client {
 			}
 			
 			
-			s.close();
-			dis.close();
-			dos.close();
+			socket.close();
+			dataInputStream.close();
+			dataOutputStream.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
