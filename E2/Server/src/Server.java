@@ -7,10 +7,10 @@ public class Server {
 
 	// Default Port
 	public static final int PORT = 54321; 
+    public static volatile long usableSpace = 1048576; 
 
 	public static void main(String[] args) {
 		int port = -1;
-		
 		// Arguments Check
 		try {
 			if (args.length == 1)
@@ -24,10 +24,7 @@ public class Server {
 		} catch (Exception e) {
 			System.out.println("Exception during Arguments Check");
 		}
-		
-		//TODO
-		//long usableSpace = new File("/").getUsableSpace();
-		
+
 		ServerSocket serverSocket = null;
 
 		// Server Socket Creation
@@ -50,8 +47,8 @@ public class Server {
 		while (true) {
 			try {
 				socket = serverSocket.accept();
-				System.out.println("Socket has been Correctly Accepted");
 				socket.setSoTimeout(30000);
+				System.out.println("Socket has been Correctly Accepted");
 				new ServerThread(socket).start();
 			} catch (IOException e) {
 				e.printStackTrace();
