@@ -9,120 +9,123 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 public class Client {
 
     private static final int MAX_TIME = 30000;
 
-
     public static void main(String[] args) {
 
 
-        // Controllo argomenti
+		// Arguments Check
         if (args.length != 2) {
-            System.err.println("Numero degli argomenti non corretto!\nUso programma: Client Indirizzo Porta");
+            System.err.println("Usage: Client Address Port");
             System.exit(1);
         }
 
-
-        // Conversione argomenti
         int port = -1;
-        try {
-            port = Integer.parseInt(args[1]);
-        } catch (NumberFormatException e) {
-            System.err.println("Errore: impossibile convertire la porta in intero!");
+		InetAddress addr = null;
+		
+		// Arguments Parsing
+		try {
+			 addr = InetAddress.getByName(args[0]);
+			 port = Integer.parseInt(args[1]);
+		} catch (UnknownHostException uhe) {
+			uhe.printStackTrace();
             System.exit(2);
-        }
+		} catch (NumberFormatException nfe) {
+			nfe.printStackTrace();
+            System.exit(3);
+		}
 
+        // To Read dirName
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        String dirName = null;
 
-        // Lettura Input utente
-        // Continuo a chiedere la Directory finché non ne viene data una corretta
-        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));;
-        String inputDirName = null;
+        // Input Read Loop
         try {
             do {
-                System.out.print("Inserisci una directory valida i cui contenuti saranno inviati al Server: ");
-                inputDirName = reader.readLine();
-
-            } while (!Files.isDirectory(Paths.get(inputDirName)));
+                System.out.println("Enter Directory [EOF to end]: ");
+                dirName = reader.readLine();
+            } while (!Files.isDirectory(Paths.get(dirName)));
         } catch (IOException e) {
-            System.err.println("Errore lettura input!");
+            e.printStackTrace();
+            System.exit(4);
         }
 
-        System.out.println("La directory " + inputDirName + " è stata accettata!");
+        System.out.println("Directory: " + dirName + " Accepted");
 
-        // Comunicazione
+        // Communication
         Socket clientSocket;
         DataOutputStream dataOut;
         DataInputStream dataIn;
 
-        // Creo il file che rappresenta la mia Directory 
-        File dir = new File(inputDirName);
-        // Ottengo tutti i file della Directory (escludendo le Sub-Directory)
+        // Creating Files to represent Directory
+        File dir = new File(dirName);
+
+        // List Files except Sub-Directory
         File[] filesInDir = dir.listFiles(new FileFilter() {
             @Override
             public boolean accept(File file) {
-                return file.isFile() && !file.isHidden(); // Ottengo solo i file che non siano nascosti
+                //Filtering files that  are not hidden
+                return file.isFile() && !file.isHidden();
             }
         });
 
-        int response, count = -1;;
+        int response, count = -1;
         try {
 
-            // Socket con relativo Timeout
-            clientSocket = new Socket(args[0], port);
+            // Socket Creation and Timeout Setting
+            clientSocket = new Socket(addr, port);
             clientSocket.setSoTimeout(MAX_TIME);
 
             // Streams
             dataOut = new DataOutputStream(clientSocket.getOutputStream());
             dataIn = new DataInputStream(clientSocket.getInputStream());
 
-            // Per ogni file nell'array
+            // For Each File
             for (File f: filesInDir) {
 
-                // Scrivo il nome del file
+                // Writing details to Server
                 dataOut.writeUTF(f.getName());
-                // Scrivo la sua dimensione 
                 dataOut.writeLong(f.length());
-
-                // Leggo la risposta del Server
-                System.out.println("Aspettando la risposta del Server...");
+                System.out.println("Informations about the File: " + f.getName() + " of: " + f.length() + " Lenght has been Sent to Server");
+                
+                // Waiting for a response from Server
+                System.out.println("Waiting for Server Response...");
                 response = dataIn.readInt();
 
-                // Se la richiesta è stata accettata
+                // If Accepted
                 if (response >= 0) {
+                    System.out.println("Server has accepted the request of File: " + f.getName());
 
-                    // Re-inizializzo il BufferedReader così da inviare il file
+                    // BufferedReader Initialization
+                    System.out.println("Reading File: " + f.getName());
                     reader = new BufferedReader(new FileReader(f));
+                    System.out.println("Sending File: " + f.getName() + " to Server");
 
-                    System.out.println("Invio del file " + f.getName() + " al Server...");
-
-                    // Leggo fino a EOF (-1) e lo scrivo nella DataOutputStream
-                    while ((count = reader.read()) >= 0) {
+                    // Read and Write till EOF (-1)
+                    while ((count = reader.read()) > 0) {
                         dataOut.write(count);
                     }
-
+                    System.out.println("File: " + f.getName() + " Sent");
                     reader.close();
-
                 } else {
-                    System.err.println("Il Server ha rifiutato la richiesta del file " + f.getName() + "!");
+                    System.err.println("Server has refused the request of File: " + f.getName());
                 }
-
             }
 
-            // Chiusura della comunicazione
+            // Closing Communications
             clientSocket.close();
             dataOut.close();
             dataIn.close();
-            System.out.println("Chiusura comunicazione!");
-
+            System.out.println("Closing Communications");
+            System.out.println("A Client has been Served");
         } catch (IOException e) {
-            System.err.println("Errore comunicazione!");
-            System.exit(3);
+            e.printStackTrace();
+            System.exit(5);
         }
-
     }
-
-
-
 }
