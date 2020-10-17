@@ -17,7 +17,7 @@ public class ServerThread extends Thread {
 		 FileOutputStream fos = null;
 		int outcome = -1;
 		
-		String nameFile = null; 
+		String nameFile; 
 		long lenght = 0;
 		try {
 			try {
@@ -39,8 +39,10 @@ public class ServerThread extends Thread {
 				if(new File(nameFile).exists()){
 					outcome=-1;
 					System.out.println("FIGLIO: "+nameFile+ " già presente");
+					dos.writeInt(outcome);
 				}else {
 					//inizio trasferimento
+					dos.writeInt(1);
 					System.out.println("FIGLIO: inizio trasferimento di "+ nameFile);
 					fos=new FileOutputStream(new File(nameFile));
 					

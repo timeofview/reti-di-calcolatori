@@ -63,8 +63,8 @@ public class Client {
 		try {
 			s = new Socket(addr, port);
 			s.setSoTimeout(30000);
-			dos=new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
-			dis=new DataInputStream(new BufferedInputStream(s.getInputStream()));
+			dos=new DataOutputStream(s.getOutputStream());
+			dis=new DataInputStream(s.getInputStream());
 			int accepted;
 		
 			File[] files = new File(nameDir).listFiles(); //comprende anche le directory
@@ -73,9 +73,8 @@ public class Client {
 			for(File f : files) {
 				
 				if(f.isFile() && !f.isHidden()) {
-					System.out.println("CLIENT: invio file "+ f.getName());
+					System.out.println("CLIENT: invio nome file "+ f.getName());
 					dos.writeUTF(f.getName());
-					
 					dos.writeLong(f.length());
 					System.out.println("Attendo risposta dal Server...");
 					accepted=dis.readInt();
@@ -86,7 +85,7 @@ public class Client {
 						while(((buff.read(b))>0)) { // da ragionare
 							dos.write(b);
 						}
-						
+						dis.readInt();
 						buff.close();
 					}else {
 						System.out.println("Il server ha rifiutato l'operazione sul file "+f.getName());
