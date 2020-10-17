@@ -46,7 +46,7 @@ public class Client {
 	    		
 	    	}while(!Files.isDirectory(Paths.get(inputDirName)));
     	}catch(IOException e) {
-    		e.printStackTrace();
+    		System.err.println("Errore lettura input!");
     	}
     	
         System.out.println("La directory " + inputDirName + " è stata accettata!");
@@ -117,7 +117,8 @@ public class Client {
             System.out.println("Chiusura comunicazione!");
             
         }catch(IOException e) {
-        	
+        	System.err.println("Errore comunicazione!");
+        	System.exit(3);
         }
 		
 	}
