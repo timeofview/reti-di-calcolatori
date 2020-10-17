@@ -68,19 +68,23 @@ public class Client {
 			int accepted;
 		
 			File[] files = new File(nameDir).listFiles(); //comprende anche le directory
-			BufferedReader buff;
-			String temp;
+			InputStream buff;
+			byte[] b= new byte[1];
 			for(File f : files) {
-				if(f.isFile()) {
-					
+				
+				if(f.isFile() && !f.isHidden()) {
+					System.out.println("CLIENT: invio file "+ f.getName());
 					dos.writeUTF(f.getName());
+					
 					dos.writeLong(f.length());
 					System.out.println("Attendo risposta dal Server...");
 					accepted=dis.readInt();
+					
 					if(accepted>=0) {
-						buff = new BufferedReader(new FileReader(f));
-						while((temp = buff.readLine())!=null) { // da ragionare
-							dos.writeUTF(temp);
+						System.out.println("richiesta accettata: invio del file "+ f.getName());
+						buff = new FileInputStream(f);
+						while(((buff.read(b))>0)) { // da ragionare
+							dos.write(b);
 						}
 						
 						buff.close();
