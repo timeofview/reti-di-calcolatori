@@ -20,7 +20,7 @@ public class Client {
 
         // Arguments check
         if (args.length != 3) {
-            System.err.println("Incorrect number of arguments!\nProgram usage: Client Address Port");
+            System.err.println("Incorrect number of arguments!\nProgram usage: Client Address Port Minimum_File_Size");
             System.exit(1);
         }
 
