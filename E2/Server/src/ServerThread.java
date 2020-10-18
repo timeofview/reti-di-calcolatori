@@ -22,7 +22,6 @@ public class ServerThread extends Thread {
         DataInputStream dataIn = null;
         DataOutputStream dataOut = null;
         DataOutputStream fileOut = null;
-        FileOutputStream out = null;
 
         try {
             System.out.println("A server thread has been correctly initialized with " + Server.usableSpace + " available storage");
