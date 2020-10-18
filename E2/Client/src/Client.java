@@ -20,7 +20,7 @@ public class Client {
 
         // Arguments check
         if (args.length != 3) {
-            System.err.println("Incorrect number of arguments!\nProgram usage: Client Address Port Minimum_File_Size");
+            System.err.println("Incorrect number of arguments!\nProgram usage: Client Address Port MinFileSize");
             System.exit(1);
         }
 
@@ -30,8 +30,8 @@ public class Client {
         // Arguments parsing
         try {
             port = Integer.parseInt(args[1]);
-            minDim = Integer.parseInt(args[2]);    
-        }catch (NumberFormatException nfe) {
+            minDim = Integer.parseInt(args[2]);
+        } catch (NumberFormatException nfe) {
             nfe.printStackTrace();
             System.exit(2);
         }
@@ -50,16 +50,16 @@ public class Client {
             e.printStackTrace();
             System.exit(3);
         }
-        
-       
+
+
         // Closing BufferedReader
         try {
-			reader.close();
-		} catch (IOException e) {
+            reader.close();
+        } catch (IOException e) {
             e.printStackTrace();
             System.exit(4);
-		}
-        
+        }
+
         // Communication
         Socket clientSocket;
         DataOutputStream dataOut = null;
@@ -68,12 +68,12 @@ public class Client {
 
         // Creating a "File" object that represents the Directory selected by the user
         File dir = new File(dirName);
-		
+
         // List all files in the Directory, except sub-directories and hidden files
         File[] filesInDir = dir.listFiles(new FileFilter() {
             @Override
             public boolean accept(File file) {
-				
+
                 // FileFilter needed to cut off sub-directories and hidden files
                 return file.isFile() && !file.isHidden();
             }
@@ -94,8 +94,8 @@ public class Client {
             dataIn = new DataInputStream(clientSocket.getInputStream());
 
             // Iterate on each file in the directory 
-            for (File f : filesInDir) {
-				
+            for (File f: filesInDir) {
+
                 // Check dim 
                 if (f.length() < minDim || (f.length() >= record && record != 0)) {
                     continue;
@@ -121,13 +121,13 @@ public class Client {
                     while ((count = fileIn.read()) > 0) {
                         dataOut.write(count);
                     }
-					
-					// Writing the end of each byte stream (needed, otherwise it won't work)
+
+                    // Writing the end of each byte stream (needed, otherwise it won't work)
                     dataOut.write(0);
-					
-					// Sending the content of dataOut
+
+                    // Sending the content of dataOut
                     dataOut.flush();
-					
+
                 } else {
                     System.err.println("Server has refused file " + f.getName() + "!");
                 }
@@ -139,7 +139,7 @@ public class Client {
             clientSocket.close();
             dataOut.close();
             dataIn.close();
-			
+
         } catch (IOException e) {
             e.printStackTrace();
             System.exit(5);
