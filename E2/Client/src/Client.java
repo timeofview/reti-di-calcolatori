@@ -3,14 +3,14 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 public class Client {
 
@@ -61,7 +61,8 @@ public class Client {
         Socket clientSocket;
         DataOutputStream dataOut;
         DataInputStream dataIn;
-
+        DataInputStream fileStream;
+        
         // Creating Files to represent Directory
         File dir = new File(dirName);
 
@@ -70,7 +71,7 @@ public class Client {
             @Override
             public boolean accept(File file) {
                 //Filtering files that  are not hidden
-                return file.isFile() && !file.isHidden();
+                return file.isFile();
             }
         });
 
@@ -79,7 +80,7 @@ public class Client {
 
             // Socket Creation and Timeout Setting
             clientSocket = new Socket(addr, port);
-            clientSocket.setSoTimeout(MAX_TIME);
+            //clientSocket.setSoTimeout(MAX_TIME);
 
             // Streams
             dataOut = new DataOutputStream(clientSocket.getOutputStream());
@@ -87,6 +88,7 @@ public class Client {
 
             // For Each File
             for (File f: filesInDir) {
+
 
                 // Writing details to Server
                 dataOut.writeUTF(f.getName());
@@ -103,18 +105,23 @@ public class Client {
 
                     // BufferedReader Initialization
                     System.out.println("Reading File: " + f.getName());
-                    reader = new BufferedReader(new FileReader(f));
+                    fileStream = new DataInputStream(new FileInputStream(f));
                     System.out.println("Sending File: " + f.getName() + " to Server");
 
                     // Read and Write till EOF (-1)
-                    while ((count = reader.read()) > 0) {
+                    while ((count = fileStream.read()) > 0) {
                         dataOut.write(count);
                     }
+                    dataOut.write(0);
+                    dataOut.flush();
+
                     System.out.println("File: " + f.getName() + " Sent");
                     reader.close();
                 } else {
                     System.err.println("Server has refused the request of File: " + f.getName());
                 }
+              //  response = dataIn.readInt();
+                System.out.println(response);
             }
 
             // Closing Communications

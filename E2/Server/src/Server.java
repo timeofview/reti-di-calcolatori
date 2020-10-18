@@ -7,7 +7,7 @@ public class Server {
 
 	// Default Port
 	public static final int PORT = 54321; 
-    public static volatile long usableSpace = 1048576; 
+    public static volatile long usableSpace = Long.MAX_VALUE; 
 
 	public static void main(String[] args) {
 		int port = -1;
