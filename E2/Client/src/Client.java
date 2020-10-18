@@ -40,10 +40,10 @@ public class Client {
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         String dirName = null;
 
-        // Input Read Loop
+        // User input loop
         try {
             do {
-                System.out.println("Enter a valid non-empty Directory [EOF to end]: ");
+                System.out.print("Enter a valid non-empty Directory [EOF to end]: ");
                 dirName = reader.readLine();
             } while (!Files.isDirectory(Paths.get(dirName)) || !Files.list(Paths.get(dirName)).findAny().isPresent());
         } catch (IOException e) {
