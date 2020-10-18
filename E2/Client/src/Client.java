@@ -6,11 +6,12 @@ import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Timestamp;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 public class Client {
 
@@ -20,18 +21,20 @@ public class Client {
 
 
 		// Arguments Check
-        if (args.length != 2) {
-            System.err.println("Usage: Client Address Port");
+        if (args.length != 3) {
+            System.err.println("["+new Timestamp(System.currentTimeMillis())+"] Usage: Client Address Port");
             System.exit(1);
         }
 
         int port = -1;
 		InetAddress addr = null;
+		int minDim = 0;
 		
 		// Arguments Parsing
 		try {
 			 addr = InetAddress.getByName(args[0]);
 			 port = Integer.parseInt(args[1]);
+			 minDim = Integer.parseInt(args[2]);
 		} catch (UnknownHostException uhe) {
 			uhe.printStackTrace();
             System.exit(2);
@@ -47,7 +50,7 @@ public class Client {
         // Input Read Loop
         try {
             do {
-                System.out.println("Enter Directory [EOF to end]: ");
+                System.out.println("["+new Timestamp(System.currentTimeMillis())+"] Enter Directory [EOF to end]: ");
                 dirName = reader.readLine();
             } while (!Files.isDirectory(Paths.get(dirName)));
         } catch (IOException e) {
@@ -55,14 +58,14 @@ public class Client {
             System.exit(4);
         }
 
-        System.out.println("Directory: " + dirName + " Accepted");
+        System.out.println("["+new Timestamp(System.currentTimeMillis())+"] Directory: " + dirName + " Accepted");
 
         // Communication
         Socket clientSocket;
-        DataOutputStream dataOut;
-        DataInputStream dataIn;
-        DataInputStream fileStream;
-        
+        DataOutputStream dataOutputStream=null;
+        DataInputStream dataInputStream=null;
+        DataInputStream inFile;
+
         // Creating Files to represent Directory
         File dir = new File(dirName);
 
@@ -71,11 +74,18 @@ public class Client {
             @Override
             public boolean accept(File file) {
                 //Filtering files that  are not hidden
-                return file.isFile();
+                return file.isFile() && !file.isHidden();
             }
         });
+        try {
+			reader.close();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
 
-        int response, count = -1;
+        int response = -1;
+        int count = 0;
+        long record = 0;
         try {
 
             // Socket Creation and Timeout Setting
@@ -83,53 +93,57 @@ public class Client {
             //clientSocket.setSoTimeout(MAX_TIME);
 
             // Streams
-            dataOut = new DataOutputStream(clientSocket.getOutputStream());
-            dataIn = new DataInputStream(clientSocket.getInputStream());
+            dataOutputStream = new DataOutputStream(clientSocket.getOutputStream());
+            dataInputStream = new DataInputStream(clientSocket.getInputStream());
 
             // For Each File
             for (File f: filesInDir) {
-
-
+            	//Check Dimension
+            	if(f.length()<minDim||(f.length()>=record&&record!=0)) {continue;}
                 // Writing details to Server
-                dataOut.writeUTF(f.getName());
-                dataOut.writeLong(f.length());
-                System.out.println("Informations about the File: " + f.getName() + " of: " + f.length() + " Lenght has been Sent to Server");
-                
+                dataOutputStream.writeUTF(f.getName());
+                dataOutputStream.writeLong(f.length());
+                System.out.println("["+new Timestamp(System.currentTimeMillis())+"] Informations about the File: " + f.getName() + " of: " + f.length() + " Lenght has been Sent to Server");
+
                 // Waiting for a response from Server
-                System.out.println("Waiting for Server Response...");
-                response = dataIn.readInt();
+                System.out.println("["+new Timestamp(System.currentTimeMillis())+"] Waiting for Server Response...");
+                response = dataInputStream.readInt();
 
                 // If Accepted
-                if (response >= 0) {
-                    System.out.println("Server has accepted the request of File: " + f.getName());
+                if (response == -2) {
+                	record = f.length();
+                }
+                else if (response >= 0) {
 
-                    // BufferedReader Initialization
-                    System.out.println("Reading File: " + f.getName());
-                    fileStream = new DataInputStream(new FileInputStream(f));
-                    System.out.println("Sending File: " + f.getName() + " to Server");
+                    System.out.println("["+new Timestamp(System.currentTimeMillis())+"] Server has accepted the request of File: " + f.getName());
+
+                    // BufferedReader Initialisation
+                    System.out.println("["+new Timestamp(System.currentTimeMillis())+"] Reading File: " + f.getName());
+                    inFile = new DataInputStream(new FileInputStream(f));
+                    System.out.println("["+new Timestamp(System.currentTimeMillis())+"] Sending File: " + f.getName() + " to Server");
 
                     // Read and Write till EOF (-1)
-                    while ((count = fileStream.read()) > 0) {
-                        dataOut.write(count);
+                    while ((count = inFile.read())>0) {
+                        dataOutputStream.write(count);
                     }
-                    dataOut.write(0);
-                    dataOut.flush();
-
-                    System.out.println("File: " + f.getName() + " Sent");
-                    reader.close();
+                    dataOutputStream.write(0);
+                    System.out.println("["+new Timestamp(System.currentTimeMillis())+"] File: " + f.getName() + " Sent");
+                    /*if((response = dataInputStream.readInt())==1) {System.out.println("Server has completed Operation on File");}
+                    else {System.out.println("Server hasn't completed Operation on File");}*/
+                    dataOutputStream.flush();
                 } else {
-                    System.err.println("Server has refused the request of File: " + f.getName());
+                    System.err.println("["+new Timestamp(System.currentTimeMillis())+"] Server has refused the request of File: " + f.getName());
                 }
-              //  response = dataIn.readInt();
-                System.out.println(response);
             }
 
             // Closing Communications
+            clientSocket.shutdownOutput();
+            clientSocket.shutdownInput();
             clientSocket.close();
-            dataOut.close();
-            dataIn.close();
-            System.out.println("Closing Communications");
-            System.out.println("A Client has been Served");
+            dataOutputStream.close();
+            dataInputStream.close();
+            System.out.println("["+new Timestamp(System.currentTimeMillis())+"] Closing Communications");
+            System.out.println("["+new Timestamp(System.currentTimeMillis())+"] A Client has been Served");
         } catch (IOException e) {
             e.printStackTrace();
             System.exit(5);
