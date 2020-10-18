@@ -4,6 +4,7 @@ import java.io.FileOutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Timestamp;
 
 public class ServerThread extends Thread {
     private Socket socket;
@@ -57,25 +58,22 @@ public class ServerThread extends Thread {
                 // If the client request has been accepted
                 if (response > 0) {
 
-                    out = new FileOutputStream(fileName);
-                    fileOut = new DataOutputStream(out);
+                    fileOut = new DataOutputStream(new FileOutputStream(fileName));
 
                     // Reading and writing byte per byte until EOF = -1 is reached
                     while ((buffer = dataIn.read()) > 0) {
                         fileOut.write(buffer);
                     }
 
-                    // Closing file
-                    out.close();
+                    // Closing
                     fileOut.flush();
                     fileOut.close();
-                    
                     Server.usableSpace -= fileLength;
                     System.out.println("A file transfer has been completed. Server storage: " + Server.usableSpace);
                 }
             }
             
-            // Closing communication
+            //Closing communication
             socket.shutdownInput();
             socket.shutdownOutput();
             socket.close();
