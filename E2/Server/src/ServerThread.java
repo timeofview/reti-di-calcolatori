@@ -73,7 +73,7 @@ public class ServerThread extends Thread {
                 }
             }
             
-            //Closing communication
+            // Closing communication
             socket.shutdownInput();
             socket.shutdownOutput();
             socket.close();
