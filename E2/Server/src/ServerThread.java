@@ -4,75 +4,83 @@ import java.io.FileOutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.Timestamp;
 
 public class ServerThread extends Thread {
-	private Socket socket;
+    private Socket socket;
 
-	public ServerThread(Socket socket) {
-		this.socket = socket;
-	}
+    public ServerThread(Socket socket) {
+        this.socket = socket;
+    }
 
-	public void run() {
-		int buffer;
-		int result;
-		String fileName;
-		long dim = 0; 
-		DataInputStream dataInputStream = null;
-		DataOutputStream dataOutputStream = null;
-		DataOutputStream outFile = null;
-		FileOutputStream out = null;
-		
-		try {
-			System.out.println("["+new Timestamp(System.currentTimeMillis())+"] Thread has been Correctly Initialized with: " + Server.usableSpace + " Usable Space");
-			dataOutputStream = new DataOutputStream(socket.getOutputStream());
-			dataInputStream = new DataInputStream(socket.getInputStream());
-			while (socket.isConnected()) {
-				fileName = dataInputStream.readUTF();
-				System.out.println("["+new Timestamp(System.currentTimeMillis())+"] File Name: "+ fileName + " has been Correctly Read from Client");
-				dim = dataInputStream.readLong();
-				System.out.println("["+new Timestamp(System.currentTimeMillis())+"] File Size: "+dim+" has been Correctly Read from Client ");	
+    public void run() {
+    	
+        int buffer;
+        int response;
+        String fileName;
+        long fileLength = 0;
+        DataInputStream dataIn = null;
+        DataOutputStream dataOut = null;
+        DataOutputStream fileOut = null;
+        FileOutputStream out = null;
 
-				// Deciding if Accepting Request
-				if(Files.exists(Paths.get(fileName))) {
-					result = -1;
-				} else if ((Server.usableSpace-dim)<0) {
-					result = -2;
-				} else {
-					result = 1;
-				}
+        try {
+            System.out.println("A server thread has been correctly initialized with " + Server.usableSpace + " available storage");
+            
+            dataOut = new DataOutputStream(socket.getOutputStream());
+            dataIn = new DataInputStream(socket.getInputStream());
+            
+            // Main loop
+            while (socket.isConnected()) {
+            	
+            	// Reading name and length of File
+                fileName = dataIn.readUTF();
+                fileLength = dataIn.readLong();
 
-				// Sending result
-				dataOutputStream.writeInt(result);
-				System.out.println("["+new Timestamp(System.currentTimeMillis())+"] Sending result to Client: " + ((result==1) ? "Accepted" : "Refused"));
+                // "response" will contain the server response
+                if (Files.exists(Paths.get(fileName))) {
+                	
+                	// Server already's got the file :(
+                    response = -1;
+                } else if ((Server.usableSpace - fileLength) < 0) {
+                	
+                	// Server storage is full :(
+                    response = -2;
+                } else {
+                	
+                	// OK, accepting the request :)
+                    response = 1;
+                }
 
-				// If Everything is fine
-				if (result > 0) {
-					
-					// Receiving the File Byte per Byte
-					out = new FileOutputStream(fileName);
-					outFile =  new DataOutputStream(out);
-					System.out.println("["+new Timestamp(System.currentTimeMillis())+"] Receiving from Client and Writing");
-					// Read Until EOF = -1
-					while ((buffer = dataInputStream.read())>0) {
-						outFile.write(buffer);
-					}
-					
-					// Closing File
-					out.close();
-					outFile.flush();
-					outFile.close();
-					Server.usableSpace-=dim;
-					System.out.println("["+new Timestamp(System.currentTimeMillis())+"] A Transfer has been Completed. Usable Space: " + Server.usableSpace);
-					//dataOutputStream.writeInt(1);
-				}
-			}
-			//Closing Communications
-			socket.shutdownInput();
-			socket.shutdownOutput();
-			socket.close();
-		} catch (Exception e) {
+                // Sending "response"
+                dataOut.writeInt(response);
+
+                // If the client request has been accepted
+                if (response > 0) {
+
+                    out = new FileOutputStream(fileName);
+                    fileOut = new DataOutputStream(out);
+
+                    // Reading and writing byte per byte until EOF = -1 is reached
+                    while ((buffer = dataIn.read()) > 0) {
+                        fileOut.write(buffer);
+                    }
+
+                    // Closing file
+                    out.close();
+                    fileOut.flush();
+                    fileOut.close();
+                    
+                    Server.usableSpace -= fileLength;
+                    System.out.println("A file transfer has been completed. Server storage: " + Server.usableSpace);
+                }
+            }
+            
+            // Closing communication
+            socket.shutdownInput();
+            socket.shutdownOutput();
+            socket.close();
+        } catch (Exception e) {
             e.printStackTrace();
-		}
-	}
+        }
+    }
 }
