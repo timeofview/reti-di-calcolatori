@@ -43,6 +43,7 @@ public class Server {
         }
 
         Socket clientSocket;
+        System.out.println("Server has been correctly started");
         // Main loop
         while (true) {
             try {
