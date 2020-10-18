@@ -50,7 +50,8 @@ public class Server {
             	// Accepting client connections 
                 clientSocket = serverSocket.accept();
                 clientSocket.setSoTimeout(MAX_TIME);
-
+                
+                // Starting a ServerThread
                 new ServerThread(clientSocket).start();
             } catch (IOException e) {
                 e.printStackTrace();
