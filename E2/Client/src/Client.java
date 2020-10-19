@@ -94,7 +94,7 @@ public class Client {
             dataIn = new DataInputStream(clientSocket.getInputStream());
 
             // Iterate on each file in the directory 
-            for (File f: filesInDir) {
+            for (File f : filesInDir) {
 
                 // Check dim 
                 if (f.length() < minDim || (f.length() >= record && record != 0)) {
