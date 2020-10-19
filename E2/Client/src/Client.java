@@ -108,7 +108,7 @@ public class Client {
                 // Waiting server response
                 response = dataIn.readInt();
 
-                // If the server accepts the client request
+                // If the server refuses the client request (server storage's full)
                 if (response == -2) {
                     record = f.length();
                 } else if (response >= 0) {
