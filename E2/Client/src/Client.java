@@ -98,7 +98,8 @@ public class Client {
 
                 // Check dim 
                 if (f.length() < minDim || (f.length() >= record && record != 0)) {
-                    continue;
+                    System.out.println("File " + f.getName() + " skipped");
+                	continue;
                 }
                 // Sending the name and length of the file
                 dataOut.writeUTF(f.getName());
