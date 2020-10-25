@@ -13,8 +13,9 @@
 
 void child_handler(int signo){
 	int state;
-	printf("Waiting for a child to die\n");
+	printf("Waiting a child\n");
 	wait(&state);
+	printf("Completed 1 transaction\n");
 }
 
 int main(int argc, int** argv){
@@ -26,7 +27,7 @@ int main(int argc, int** argv){
 
 	//check arguments
 	if(argc!=2){ 
-		printf("Error: %s port\n", argv[0]); 
+		printf("Usage: server port"); 
 		exit(1); 
 	}
 	else {
@@ -47,25 +48,25 @@ int main(int argc, int** argv){
 	//check descriptor
 	if(listen_sd < 0){
 		perror("Socket creation"); 
-		exit(1);
+		exit(2);
 	}
 	
 	//setting socket
 	if(setsockopt(listen_sd, SOL_SOCKET, SO_REUSEADDR,&on, sizeof(on))<0){
 		perror("Socket has not been set"); 
-		exit(1);
+		exit(3);
 	}
 
 	//binding listening socket
 	if(bind(listen_sd,(struct sockaddr *) &servaddr,sizeof(servaddr))<0){
 		perror("Socket has not been bound"); 
-		exit(1);
+		exit(4);
 	}
 
 	//listening queue
 	if (listen(listen_sd, MAXBACKLOG)<0){
 		perror("Listen queue error"); 
-		exit(1);
+		exit(5);
 	}
 
 	signal(SIGCHLD, child_handler);
@@ -80,7 +81,7 @@ int main(int argc, int** argv){
 				continue;
 			}
 			else{
-				exit(1);
+				exit(6);
 			}
 		}
 
@@ -90,20 +91,22 @@ int main(int argc, int** argv){
 			line_counter = 0;
 
 			//close fds
-			close (listen_sd);close(1);close(0);
+			close (listen_sd);close(0);
 
 			//stdin, stdout redirect
-			dup(conn_sdn);dup(conn_sdn);close(conn_sdn);
+			dup(conn_sdn);dup(conn_sdn);
+			close(conn_sdn);
 
-			//in action
+			//read row to delete
 			read(conn_sdn,&n_line,sizeof(int));
-			
+
 			//main_child_loop
 			while(nread=read(conn_sdn,buff,DIM_BUFF)>0){
 				for(int i = 0; i < nread; i++){
 					if(buff[i]=='\n'){
 						line_counter++;
 						if(n_line!=line_counter){
+							write(1,buff,nread);
 							write(conn_sdn,buff,nread);
 						}
 					}
@@ -113,5 +116,6 @@ int main(int argc, int** argv){
 
 		// father close
 		close(conn_sdn);
+		close(1);
 	}
 }
