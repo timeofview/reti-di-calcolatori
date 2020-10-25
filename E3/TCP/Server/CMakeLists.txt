@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
-project(Client C)
+project(Server C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(Client client.c)
+add_executable(Server server.c)

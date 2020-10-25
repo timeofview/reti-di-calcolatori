@@ -20,7 +20,7 @@ int main(int argc,char **argv) {
     host = gethostbyname(argv[1]);
     port=atoi(argv[2]);
 
-    struct sockaddr_in socket_add = {.sin_addr.s_addr= ((struct in_addr *)(host->h_addr)) -> s_addr,.sin_port= port,.sin_family=AF_INET};
+    struct sockaddr_in socket_add = {.sin_addr.s_addr= ((struct in_addr *)(host->h_addr)) -> s_addr,.sin_port= htons(port),.sin_family=AF_INET};
 
     printf("Write filename:\n");
     gets(filename);
@@ -31,11 +31,14 @@ int main(int argc,char **argv) {
         perror("Errore appertura file in input.");
         exit(2);
     }
-    if((fd_out=open(filename,O_WRONLY|O_CREAT,0777))<0){
+    char filename_out[FILENAME_MAX];
+    strcpy(filename_out,filename);
+    strcat(filename_out,"-out");
+    if((fd_out=open(filename_out,O_WRONLY|O_CREAT,0777))<0){
         perror("Errore appertura file in output.");
         exit(3);
     }
-    if(sd = socket(AF_INET,SOCK_STREAM,0)<0){
+    if((sd = socket(AF_INET,SOCK_STREAM,0))<0){
         perror("Errore appertura socket.");
         exit(4);
     }
@@ -48,15 +51,16 @@ int main(int argc,char **argv) {
     while((nread=read(fd_in,buff,DIM_BUFF))>0){
         write(sd,buff,nread);
     }
+    shutdown(sd,1);
     close(fd_in);
     while((nread=read(sd,buff,DIM_BUFF))>0){
+
         write(fd_out,buff,nread);
         write(0,buff,nread);
     }
-    shutdown(sd,2);
+    shutdown(sd,0);
     close(sd);
     close(fd_out);
-    printf("f");
 
     return 0;
 }

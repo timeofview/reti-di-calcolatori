@@ -6,6 +6,8 @@
 #include <errno.h>
 #include <signal.h>
 #include <sys/socket.h>
+#include <zconf.h>
+#include <sys/wait.h>
 
 
 #define MAXBACKLOG 10
@@ -18,7 +20,7 @@ void child_handler(int signo){
 	printf("Completed 1 transaction\n");
 }
 
-int main(int argc, int** argv){
+int main(int argc, char** argv){
 	int listen_sd, conn_sdn, port, len, n_line, line_counter, nread;
 	const int on = 1;
 	struct sockaddr_in cliaddr, servaddr;
@@ -69,7 +71,7 @@ int main(int argc, int** argv){
 		exit(5);
 	}
 
-	signal(SIGCHLD, child_handler);
+	//signal(SIGCHLD, child_handler);
 
 	//mainloop
 	while(1){
@@ -84,38 +86,39 @@ int main(int argc, int** argv){
 				exit(6);
 			}
 		}
-
-		//child
-		if (fork()==0){
+        int pid = fork();
+		if(pid<0){
+		    perror("Errore nelal fork\n");
+		    exit(7);
+		}
+		else if (pid==0){
 
 			line_counter = 0;
 
 			//close fds
-			close (listen_sd);close(0);
-
-			//stdin, stdout redirect
-			dup(conn_sdn);dup(conn_sdn);
-			close(conn_sdn);
+			close (listen_sd);
 
 			//read row to delete
 			read(conn_sdn,&n_line,sizeof(int));
-
+            int offset;
 			//main_child_loop
-			while(nread=read(conn_sdn,buff,DIM_BUFF)>0){
+			while((nread=read(conn_sdn,buff,DIM_BUFF))>0){
+			    offset=0;
 				for(int i = 0; i < nread; i++){
 					if(buff[i]=='\n'){
 						line_counter++;
 						if(n_line!=line_counter){
-							write(1,buff,nread);
-							write(conn_sdn,buff,nread);
+							write(conn_sdn,(buff+offset),i+1-offset);
 						}
+                        printf(" \n");
+						offset=i+1;
 					}
 				}
 			}
+			shutdown(conn_sdn,2);
+			exit(0);
+		} else{
+            close(conn_sdn);
 		}
-
-		// father close
-		close(conn_sdn);
-		close(1);
 	}
 }
