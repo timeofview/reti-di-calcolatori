@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 	
 
 	
-    printf("Enter the file path [EOF to end]: ");
+    printf("Enter the file name[EOF to end]: ");
     
     // Ciclo principale
     while(scanf("%s", fileName) != EOF) {
@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
 			printf("Maximum string length from Server: %d\n", reply);
 
 
-        printf("Enter the file path: ");
+        printf("Enter file name [EOF to end]: ");
 
 	}
 	
