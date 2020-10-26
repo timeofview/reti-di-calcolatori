@@ -2,10 +2,9 @@
 #include <stdlib.h>
 #include <netdb.h>
 #include <fcntl.h>
-#include <zconf.h>
 #include <string.h>
 
-#define DIM_BUFF 5024
+#define DIM_BUFF 1024
 
 int main(int argc,char **argv) {
     int sd,fd_in,fd_out,port,row,nread;
@@ -19,7 +18,10 @@ int main(int argc,char **argv) {
     }
     host = gethostbyname(argv[1]);
     port=atoi(argv[2]);
-
+    if(host==NULL){
+        perror("NULL host");
+        exit(2);
+    }
     struct sockaddr_in socket_add = {.sin_addr.s_addr= ((struct in_addr *)(host->h_addr)) -> s_addr,.sin_port= htons(port),.sin_family=AF_INET};
 
     printf("Write filename:\n");
@@ -47,20 +49,20 @@ int main(int argc,char **argv) {
         exit(5);
     }
     write(sd,&row,sizeof(int));
-
+    printf("Sending\n");
     while((nread=read(fd_in,buff,DIM_BUFF))>0){
         write(sd,buff,nread);
     }
     shutdown(sd,1);
     close(fd_in);
+    printf("Receiving\n");
     while((nread=read(sd,buff,DIM_BUFF))>0){
-
         write(fd_out,buff,nread);
-        write(0,buff,nread);
+        //write(0,buff,nread);
+        printf("%s",buff);
     }
     shutdown(sd,0);
     close(sd);
     close(fd_out);
-
     return 0;
 }

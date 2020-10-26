@@ -6,8 +6,8 @@
 #include <errno.h>
 #include <signal.h>
 #include <sys/socket.h>
-#include <zconf.h>
 #include <sys/wait.h>
+#include <netinet/in.h>
 
 
 #define MAXBACKLOG 10
@@ -25,7 +25,7 @@ int main(int argc, char** argv){
 	const int on = 1;
 	struct sockaddr_in cliaddr, servaddr;
 	struct hostent *host;
-	char buff[DIM_BUFF];
+	char buff[DIM_BUFF], buffToSend[DIM_BUFF];
 
 	//check arguments
 	if(argc!=2){ 
@@ -71,7 +71,7 @@ int main(int argc, char** argv){
 		exit(5);
 	}
 
-	//signal(SIGCHLD, child_handler);
+	signal(SIGCHLD, child_handler);
 
 	//mainloop
 	while(1){
@@ -88,12 +88,12 @@ int main(int argc, char** argv){
 		}
         int pid = fork();
 		if(pid<0){
-		    perror("Errore nelal fork\n");
+		    perror("Errore nella fork\n");
 		    exit(7);
 		}
 		else if (pid==0){
 
-			line_counter = 0;
+			line_counter = 1;
 
 			//close fds
 			close (listen_sd);
@@ -107,13 +107,15 @@ int main(int argc, char** argv){
 				for(int i = 0; i < nread; i++){
 					if(buff[i]=='\n'){
 						line_counter++;
-						if(n_line!=line_counter){
-							write(conn_sdn,(buff+offset),i+1-offset);
-						}
-                        printf(" \n");
-						offset=i+1;
+					}
+					if(n_line!=line_counter){
+						buffToSend[offset]=buff[i];
+						offset++;
 					}
 				}
+				//Da aggiustare
+				buffToSend[offset+1]='\0';
+				write(conn_sdn,buffToSend,offset+1);
 			}
 			shutdown(conn_sdn,2);
 			exit(0);
