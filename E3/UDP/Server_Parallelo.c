@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 
 
     // Variabili legate al programma
-    int i, port, enable = 1, clientSize, pid, fd, result,  fileSize, bufSizeReal = BUF_SIZE, nread, count;
+    int i, port, enable = 1, clientSize, pid, fd, result,  fileSize, bufSizeReal = BUF_SIZE, nRead, count;
     char fileName[STR_MAX];
     // Socket descriptors
     int sd;
@@ -167,9 +167,9 @@ int main(int argc, char *argv[]) {
                     result = 0;
 
                     // Ciclo lettura file
-                    while((nread=read(fd, &buf, bufSizeReal * sizeof(char))) > 0) {
+                    while((nRead=read(fd, &buf, bufSizeReal * sizeof(char))) > 0) {
 
-                        for (i = 0; i < nread; i++) {
+                        for (i=0; i<nRead; i++) {
 
                             if (buf[i] == ' ' || buf[i] == '\n' || buf[i] == '\t') {
                                 if (count > result) {
@@ -197,11 +197,11 @@ int main(int argc, char *argv[]) {
 
                 // Stampo a video la lunghezza della parola più lunga
                 if(result == -1)
-                    printf("Error: file %s doesn't exist in the Server's FileSystem!\n", fileName);
+                    fprintf(stderr, "Error: file %s not found!\n", fileName);
                 else
                     printf("Length of the longest word: %d \n", result);
 
-                // Im
+                // Result diventa uguale
                 result = htonl(result);
 
                 // Invio al client la lunghezza della parola più lunga
