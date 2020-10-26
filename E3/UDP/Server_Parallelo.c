@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 
 
     // Variabili legate al programma
-    int i, port, enable = 1, clientSize, pid, fd, result,  fileSize, bufSizeReal = BUF_SIZE, logicalSize, count;
+    int i, port, enable = 1, clientSize, pid, fd, result,  fileSize, bufSizeReal = BUF_SIZE, nread, count;
     char fileName[STR_MAX];
     // Socket descriptors
     int sd;
@@ -167,12 +167,9 @@ int main(int argc, char *argv[]) {
                     result = 0;
 
                     // Ciclo lettura file
-                    while(read(fd, &buf, bufSizeReal * sizeof(char)) > 0) {
+                    while((nread=read(fd, &buf, bufSizeReal * sizeof(char))) > 0) {
 
-                        // Ottengo la dimensione logica del buffer (quella effettivamente occupata)
-                        logicalSize = sizeof(buf) / sizeof(buf[0]);
-
-                        for (i = 0; i < logicalSize; i++) {
+                        for (i = 0; i < nread; i++) {
 
                             if (buf[i] == ' ' || buf[i] == '\n' || buf[i] == '\t') {
                                 if (count > result) {
