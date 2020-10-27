@@ -1,3 +1,0 @@
-/home/diogenes/dev/source/reti-di-calcolatori/E3/TCP/Server/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/diogenes/dev/source/reti-di-calcolatori/E3/TCP/Server/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/diogenes/dev/source/reti-di-calcolatori/E3/TCP/Server/cmake-build-debug/CMakeFiles/Server.dir
