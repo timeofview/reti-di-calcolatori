@@ -8,11 +8,9 @@
 #define PORT_MAX 65535
 
 /*
-
 	Il secondo Client, chiede ciclicamente all’utente il nome del direttorio, invia al server la
 	richiesta, riceve la lista di nomi di file remoti che stanno nei direttori contenuti nel direttorio
 	specificato,e la stampa a video
-
 */
 
 
@@ -54,12 +52,14 @@ int main(int argc, char * argv[]) {
     // Converto la porta in intero e controllo che non super il limite
     port = atoi(argv[2]);
     if(port < PORT_MIN || port > PORT_MAX) {
-        fprintf(stderr, "Error: port is exceeding the 65K limit!\n");
+		fprintf(stderr, "Error: port needs to be between %d and %d!\n", PORT_MIN, PORT_MAX);
+		
+		exit(EXIT_FAILURE);
     }
 
     serverHost = gethostbyname(argv[1]);
     if(serverHost == NULL) {
-        perror("Error unknown Server: ");
+        perror("Unknown Server error: ");
 
     }
 
@@ -84,16 +84,16 @@ int main(int argc, char * argv[]) {
 
     // Setto il tempo di ricezione nelle opzioni della Socket
     if (setsockopt (sd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(struct timeval)) < 0) {
-        fprintf(stderr, "Error: setsockopt failed\n");
+        perror("Error while setting socket options: ");
     }
     if (setsockopt (sd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(struct timeval)) < 0) {
-        fprintf(stderr, "Error: setsockopt failed\n");
+        perror("Error while setting socket options: ");
     }
 
 
     // Connect
     if(connect(sd, (struct sockaddr *)&serverAddr, sizeof(struct sockaddr)) < 0) {
-        perror("Connection error: ");
+        perror("Connect failed: ");
 
         exit(EXIT_FAILURE);
     }
@@ -105,18 +105,19 @@ int main(int argc, char * argv[]) {
     while(scanf("%s", dirName) != EOF) {
 
         // Invio della stringa
-        if(send(sd, dirName, strlen(dirName), 0) < 0) {
+        if(write(sd, dirName, strlen(dirName)) < 0) {
             perror("Send failed: ");
 
             continue;
         }
 
         // Ricevo la lista delle Stringhe
-        while((nRead = recv(sd, serverReply, STR_MAX * sizeof(char), 0)) > 0) {
+        //while((nRead = recv(sd, serverReply, STR_MAX * sizeof(char), 0)) > 0) {
+        while((nRead = read(sd, serverReply, STR_MAX * sizeof(char))) > 0) {
 
             // Errore recv
             if(nRead < 0) {
-                perror("Recv error: ");
+                perror("Socket Read failed: ");
 
                 continue;
             }
@@ -131,11 +132,13 @@ int main(int argc, char * argv[]) {
     } // fine while
 
 
-    printf("Ending communication\n");
+    printf("\n++ End of communication! ++ \n");
+
 
     // Chiusura comunicazione
     shutdown(sd, SHUT_RDWR);
     close(sd);
+
 
     return 0;
 }
