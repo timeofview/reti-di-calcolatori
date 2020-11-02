@@ -19,29 +19,30 @@
 #define PORT_MIN 1024
 #define PORT_MAX 65535
 #define STR_MAX 256
-#define BUF_MAX 256
 #define BACKLOG_MAX 10
+
 
 
 // Funzioni
 void childHandler(int);
 
 
+// RequestUDP, indica una richiesta di tipo UDP
+typedef struct {
+    char file_in[STR_MAX];
+    char word[STR_MAX];
+} request;
+
+
 int main(int argc, char *argv[]) {
 
-
-    // RequestUDP, indica una richiesta di tipo UDP
-    typedef struct {
-        char file_in[STR_MAX];
-        char word[STR_MAX];
-    } request;
-
-    int sdUdp, sdListen, sdTcp, port, clientSize, pid, i, numfds, recurrences;
+    int sdUdp, sdListen, sdTcp, port, clientSize, pid, i, j, numfds, cntFound, fdInput, fdOutput, nRead, toRemoveLen;
     const int reuse = 1;
-    int wordLen, readed, j = 0;
+
     struct sockaddr_in clientAddr, serverAddr;
     struct hostent *clienthost;
     char buff[STR_MAX];
+    char *errorString = "Cannot open Directory!\n";
     fd_set rset;
     request req;
     char dirName[STR_MAX];
@@ -90,6 +91,7 @@ int main(int argc, char *argv[]) {
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
     serverAddr.sin_port = htons(port);
+    //memset(&(serverAddr.sin_zero), '\0', 8);
 
 
     // Creazione Socket UDP
@@ -159,6 +161,8 @@ int main(int argc, char *argv[]) {
 
     printf("++ ...Waiting for Client connections... ++\n\n");
 
+    clientSize = sizeof(struct sockaddr_in);
+
     // Ciclo principale
     while(1) {
 
@@ -185,68 +189,86 @@ int main(int argc, char *argv[]) {
         // Controllo se la socket sdUdp ha dei dati disponibili
         if(FD_ISSET(sdUdp, &rset)) {
 
-            if (recvfrom(sdUdp, &req, sizeof(request), 0, (struct sockaddr *)&clientAddr, sizeof(struct sockaddr_in)) < 0) {
-                perror("Recvfrom failed: ");
+            if (recvfrom(sdUdp, &req, sizeof(req), 0, (struct sockaddr *) &clientAddr, &clientSize) < 0) {
+                perror("Recvfrom error ");
+                continue;
             }
 
             clienthost = gethostbyaddr((char *)&clientAddr.sin_addr, sizeof(clientAddr.sin_addr), AF_INET);
-            int fd_in = open(req.file_in, O_RDONLY);
-            if (fd_in < 0) {
-                recurrences = -1;
+            if (clienthost == NULL) {
+                printf("Client host information not found\n");
+            }
+            else {
+                printf("Deleting word '%s' from file '%s'...\n", req.word, req.file_in);
+            }
+
+            // Open file and separting FAILURE from SUCCESS
+            if ((fdInput = open(req.file_in, O_RDONLY)) < 0) {
+                perror("Cannot open file: ");
+
+                cntFound = -1;
             } else {
-                recurrences = 0;
-                wordLen = strlen(req.word);
-                char tmp_buff[wordLen];
 
-                char *file_out[strlen(req.file_in) + 4];
-                //strcpy(file_out, req.file_in);
-                //strcat(file_out, ".tmp");
-
-                // Alternativa: sprintf...
-                sprintf(file_out, "%s.tmp", req.file_in);
-                printf("Temp file: %s\n", file_out);
+                char fileOutName[strlen(req.file_in) + 4];
 
 
-                int fd_out = open(file_out, O_WRONLY | O_CREAT, 0777);
-                while ((readed = read(fd_in, buff, STR_MAX)) > 0) {
-                    for (i = 0; i < readed; i++) {
-                        if (req.word[j] == buff[i]) {
-                            tmp_buff[j] = buff[i];
-                            for (; j < wordLen && i < readed; ++j) {
-                                if (req.word[j] == buff[i]) {
-                                    tmp_buff[j] = buff[i++];
-                                } else {
-                                    write(fd_out, tmp_buff, strlen(tmp_buff));
-                                    j = 0;
+                sprintf(fileOutName, "%s.tmp", req.file_in);
+                printf("File Temp: %s\n", fileOutName);
+
+
+                fdOutput = open(fileOutName, O_WRONLY | O_CREAT, 0777);
+
+
+                // Length of word to remove
+                toRemoveLen = strlen(req.word);
+
+                cntFound = 0;
+                while((nRead = read(fdInput, buff, STR_MAX)) > 0) {
+
+                    for(i=0; i<nRead; i++) {
+
+                        if(buff[i] == req.word[0]) {
+
+                            for(j=0; j<toRemoveLen; j++) {
+
+                                if(buff[j+i] != req.word[j]) {
+
                                     break;
                                 }
                             }
-                            if (j == wordLen) {
-                                recurrences++;
-                                j = 0;
+
+                            if(j == toRemoveLen && (buff[j+i] == ' ' || buff[j+i] == '\t' || buff[j+i] == '\n')) {
+                                i += toRemoveLen;
+                                cntFound++;
                             }
                         }
-                        write(fd_out, &buff[i], 1);
+                        write(fdOutput, &buff[i], sizeof(char));
                     }
-                }
-                close(fd_in);
-                close(fd_out);
 
-                rename(file_out, req.file_in); // ????
-                if(sendto(sdUdp, &recurrences, sizeof(int), 0, (struct sockaddr *)&clientAddr, sizeof(struct sockaddr)) < 0) {
-                    perror("SendTo failed: ");
-
-                    continue;
                 }
 
+                // Closing file out and overwriting
+                close(fdOutput);
+                remove(req.file_in);
+                rename(fileOutName, req.file_in);
             }
 
-            printf("++ Recurrences found in file: %d ++ \n", recurrences);
+            // Closing file in
+            close(fdInput);
+            printf("Sending %d to Client...\n", cntFound);
+
+            // Sending result to Client
+            if(sendto(sdUdp, &cntFound, sizeof(cntFound), 0, (struct sockaddr *)&clientAddr, sizeof(struct sockaddr))<0) {
+                perror("Last SendTo failed:  ");
+
+                continue;
+            }
 
         } // FINE UDP
 
         // Inizio TCP
         if(FD_ISSET(sdListen, &rset)) {
+
             if((sdTcp = accept(sdListen, (struct sockaddr *)&clientAddr, &clientSize)) < 0 ) {
                 if(errno == EINTR) {
                     continue;
@@ -255,7 +277,7 @@ int main(int argc, char *argv[]) {
 
                     continue;
                 }
-            }//fine if TCP
+            } // fine if TCP
 
             // Generazione figli: Server parallelo
             if((pid = fork()) == 0) { // Figlio
@@ -264,16 +286,16 @@ int main(int argc, char *argv[]) {
 
                 // Devo restituire i nomi dei file presenti nei direttori di secondo livello (incluse anche le directory)
                 //if (recv(sdTcp, &dirName, STR_MAX*sizeof(char), 0) < 0) {
-                if(read(sdTcp, &dirName, STR_MAX*sizeof(char)) < 0) {
+                if(read(sdTcp, &dirName, STR_MAX * sizeof(char)) < 0) {
                     perror("Read failed: ");
 
                     exit(EXIT_FAILURE);
                 }
 
+
                 printf("Received the directory name: '%s'\n" , dirName);
 
                 // Apro la directory del Client
-
                 d = opendir(dirName);
 
 
@@ -288,6 +310,7 @@ int main(int argc, char *argv[]) {
                         // Se "dir" è una directory
                         if(dir->d_type == DT_DIR) {
 
+
                             // Entro nella cartella
                             d2  = opendir(dir->d_name);
 
@@ -301,16 +324,15 @@ int main(int argc, char *argv[]) {
                                     printf("\t\t\t'%s' File\n", dir2->d_name);
 
                                     // Questo if sembra non funzionare molto bene...
-                                    if(strcmp(dir2->d_name,"..") !=0 || strcmp(dir2->d_name,".") != 0) {
+                                    if(dir2->d_name[0] != '.') {
 
                                         // Invio della stringa tramite Socket TCP
-                                        // ATTENZIONE TOLTA E COMMERCIALE DA DIR2-->D_NAME!!!!!!! (NON CI ANDREBBE)
                                         if(write(sdTcp, dir2->d_name, sizeof(dir2->d_name)) < 0) {
                                             perror("Write failed: ");
 
                                             continue;
                                         }
-                                        printf("\t\t\t\t++ File '%s' has been sent to the Client! ++\n", dir2->d_name);
+                                        printf("\t\t\t\tFile '%s' has been sent to the Client!\n", dir2->d_name);
                                     }
                                 }//fine while dir 2
 
@@ -318,26 +340,42 @@ int main(int argc, char *argv[]) {
                                 closedir(d2);
                             }
 
-                        } else { // fine if(dir->d_type == DT_DIR)
-                            continue;
+                            else { // fine if(dir->d_type == DT_DIR)
+                                continue;
+                            }
                         }
+
+
 
                     } // fine while dir 1
 
                     // Chiudo la directory iniziale
                     closedir(d);
-                    shutdown(sdTcp, SHUT_RD);
-                    //close(sdTcp); // Forse?
+
+                    // Chiudo lo stream di scrittura
+                    shutdown(sdTcp, SHUT_WR);
+
+                } else { // Se la Main Directory non è stata aperta correttamente
+                    perror("Main Directory open error: ");
+
+                    // Invio messaggio d'errore al client
+                    write(sdTcp, errorString, strlen(errorString));
+
+                    close(sdTcp);
                     exit(EXIT_FAILURE);
-                } else {
-                    perror("Main directory error: ");
-                    continue;
+
                 }
 
+
+                // Chiusura comunicazione
+                close(sdTcp);
+
                 exit(EXIT_SUCCESS);
+
             } else if(pid > 0) { // Padre
 
                 continue;
+
             } else { // Errore fork
 
                 // Codice errore
@@ -345,7 +383,7 @@ int main(int argc, char *argv[]) {
 
                 continue;
             }
-        }//fine IS_SET
+        } // Fine IS_SET
     }
 
     return 0;
