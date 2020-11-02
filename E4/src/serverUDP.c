@@ -48,12 +48,12 @@ int main(int argc, char **argv)
     port = atoi(argv[1]);
     if (port < 1024 || port > 65535) {
 		    printf("Error: incorrect number port ");
-		      exit(3);
+		    exit(3);
     }
 
     printf("Checks completed\n");
 
-    // Settting socket
+    // Setting socket
     memset((char *)&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = INADDR_ANY;
@@ -79,75 +79,80 @@ int main(int argc, char **argv)
 
     printf("Settings and Bindings completed\n");
 
-    len = sizeof(struct sockaddr_in);
-    // Socket receive
-    if (recvfrom(sd_udp, &req, sizeof(req), 0,
-                  (struct sockaddr *) &cliaddr, &len) < 0){
-        perror("Recvfrom error ");
-        exit(7);
-    }
+    while(1){
 
-    clienthost = gethostbyaddr((char *)&cliaddr.sin_addr,
-                                            sizeof(cliaddr.sin_addr), AF_INET);
-    if (clienthost == NULL){
-			printf("Client host information not found\n");
-    }
-		else{
-			printf("Operation required from: %s %i\nI will work on word %s of file %s\n",
-      clienthost->h_name, (unsigned) ntohs(cliaddr.sin_port), req.file_in, req.word);
-    }
-
-    // Open file and separting FAILURE from SUCCESS
-    if ((fd_in = open(req.file_in, O_RDONLY)) < 0) {
-        printf("Bad fileName\n");
-        count = -1;
-    }
-    else {
-        count = 0;
-        wordLen = strlen(req.word);
-        char tmp_buff[wordLen];
-        char *file_out[strlen(req.file_in) + 4];
-        strcpy(file_out, req.file_in);
-        strcat(file_out, ".tmp");
-        int fd_out = open(file_out, O_WRONLY | O_CREAT, 0777);
-
-        while ((readed = read(fd_in, buff, DIM)) > 0){
-            for (i = 0; i < readed; i++){
-                if (req.word[j] == buff[i]){
-                    tmp_buff[j] = buff[i];
-                    for (; j < wordLen && i < readed; ++j){
-                        if (req.word[j] == buff[i]){
-                            tmp_buff[j] = buff[i++];
-                        }
-                        else{
-                            write(fd_out, tmp_buff, strlen(tmp_buff));
-                            j = 0;
-                            break;
-                        }
-                    }
-                    if (j == wordLen){
-                        count++;
-                        j = 0;
-                    }
-                }
-                write(fd_out, &buff[i], 1);
-            }
+        len = sizeof(struct sockaddr_in);
+        // Socket receive
+        if (recvfrom(sd_udp, &req, sizeof(req), 0,
+                    (struct sockaddr *) &cliaddr, &len) < 0){
+            perror("Recvfrom error ");
+            continue;
         }
 
-        // Closing file out and overwriting
-        close(fd_out);
-        rename(file_out, req.file_in);
-    }
+        clienthost = gethostbyaddr((char *)&cliaddr.sin_addr,
+                                                sizeof(cliaddr.sin_addr), AF_INET);
+        if (clienthost == NULL){
+                printf("Client host information not found\n");
+        }
+            else{
+                printf("Operation required from: %s %i\nI will work on word %s of file %s\n",
+        clienthost->h_name, (unsigned) ntohs(cliaddr.sin_port), req.file_in, req.word);
+        }
 
-    // Closing file in
-    close(fd_in);
-    printf("Sending result\n");
+        // Open file and separting FAILURE from SUCCESS
+        if ((fd_in = open(req.file_in, O_RDONLY)) < 0) {
+            printf("Bad fileName\n");
+            count = -1;
+        }
+        else {
+            count = 0;
+            wordLen = strlen(req.word);
+            char tmp_buff[wordLen];
+            char *file_out[strlen(req.file_in) + 4];
+            strcpy(file_out, req.file_in);
+            strcat(file_out, ".tmp");
+            int fd_out = open(file_out, O_WRONLY | O_CREAT, 0777);
 
-    // Sending result to Client
-    if(sendto(sd_udp, &count, sizeof(count), 0,
-                   (struct sockaddr *)&cliaddr, sizeof(struct sockaddr))<0){
-        perror("Error final sendto");
-        exit(8);
+            while ((readed = read(fd_in, buff, DIM)) > 0){
+                for (i = 0; i < readed; i++){
+                    if (req.word[j] == buff[i]){
+                        tmp_buff[j] = buff[i];
+                        for (; j < wordLen && i < readed; ++j){
+                            if (req.word[j] == buff[i]){
+                                tmp_buff[j] = buff[i++];
+                            }
+                            else{
+                                write(fd_out, tmp_buff, strlen(tmp_buff));
+                                j = 0;
+                                break;
+                            }
+                        }
+                        if (j == wordLen){
+                            count++;
+                            j = 0;
+                        }
+                    }
+                    write(fd_out, &buff[i], 1);
+                }
+            }
+
+            // Closing file out and overwriting
+            close(fd_out);
+            remove(req.file_in);
+            rename(file_out, req.file_in);
+        }
+
+        // Closing file in
+        close(fd_in);
+        printf("Sending result\n");
+
+        // Sending result to Client
+        if(sendto(sd_udp, &count, sizeof(count), 0,
+                    (struct sockaddr *)&cliaddr, sizeof(struct sockaddr))<0){
+            perror("Error final sendto");
+            continue;
+        }
+        printf("Completed an Operation\n------------------\n");
     }
     return EXIT_SUCCESS;
 }
