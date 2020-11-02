@@ -25,7 +25,7 @@ int main(int argc, char * argv[]) {
     struct sockaddr_in serverAddr;
     struct hostent *serverHost;
     struct timeval timeout; // Struct timeout, utilizzata per interrompere la connessione se scade
-    timeout.tv_sec = 30;
+    timeout.tv_sec = 10;
     timeout.tv_usec = 0;
 
 
@@ -72,38 +72,34 @@ int main(int argc, char * argv[]) {
     serverAddr.sin_addr.s_addr = ((struct in_addr*) (serverHost->h_addr))->s_addr; // Ottengo l'indirizzo
     serverAddr.sin_port = htons(port); // Assegno la parta in base a ciò che l'utente mi ha inserito
 
-
-    // Apertura Socket
-    if((sd = socket(AF_INET,SOCK_STREAM,0)) < 0) {
-        perror("Socket error: ");
-
-        exit(EXIT_FAILURE);
-    }
-
-
-
-    // Setto il tempo di ricezione nelle opzioni della Socket
-    if (setsockopt (sd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(struct timeval)) < 0) {
-        perror("Error while setting socket options: ");
-    }
-    if (setsockopt (sd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(struct timeval)) < 0) {
-        perror("Error while setting socket options: ");
-    }
-
-
-    // Connect
-    if(connect(sd, (struct sockaddr *)&serverAddr, sizeof(struct sockaddr)) < 0) {
-        perror("Connect failed: ");
-
-        exit(EXIT_FAILURE);
-    }
-
-
-
     // Chiedo ciclicamente all'untente il nome del direttorio
     printf("Enter directory name [EOF to end]: ");
     while(scanf("%s", dirName) != EOF) {
+	
+		// Apertura Socket
+		if((sd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+			perror("Socket error: ");
 
+			exit(EXIT_FAILURE);
+		}
+
+		// Setto il tempo di ricezione nelle opzioni della Socket
+		if(setsockopt (sd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(struct timeval)) < 0) {
+			perror("Error while setting socket options: ");
+		}
+		if(setsockopt (sd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(struct timeval)) < 0) {
+			perror("Error while setting socket options: ");
+		}
+
+
+		// Connect
+		if(connect(sd, (struct sockaddr *)&serverAddr, sizeof(struct sockaddr)) < 0) {
+			perror("Connect failed: ");
+
+			exit(EXIT_FAILURE);
+		}
+		
+		
         // Invio della stringa
         if(write(sd, dirName, strlen(dirName)) < 0) {
             perror("Send failed: ");
@@ -115,7 +111,7 @@ int main(int argc, char * argv[]) {
         //while((nRead = recv(sd, serverReply, STR_MAX * sizeof(char), 0)) > 0) {
         while((nRead = read(sd, serverReply, STR_MAX * sizeof(char))) > 0) {
 
-            // Errore recv
+            // Errore receive
             if(nRead < 0) {
                 perror("Socket Read failed: ");
 
@@ -126,18 +122,16 @@ int main(int argc, char * argv[]) {
 
             // Flusho la stringa
             memset((char*) &serverReply, 0, STR_MAX * sizeof(char));
+            
         } // fine while recv
-
+		
+		// Chiudo Socket
+		close(sd);
         printf("Enter directory name [EOF to end]: ");
     } // fine while
 
 
     printf("\n++ End of communication! ++ \n");
-
-
-    // Chiusura comunicazione
-    shutdown(sd, SHUT_RDWR);
-    close(sd);
 
 
     return 0;
