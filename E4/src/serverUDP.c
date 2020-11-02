@@ -3,6 +3,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define DIM 256
 
@@ -16,7 +19,7 @@ int main(int argc, char **argv)
 {
     char buff[DIM];
     char buff_out[DIM];
-    int wordLen, readed, count, i, j = 0;
+    int len, wordLen, readed, count, fd_in, i, j = 0;
 
     struct sockaddr_in servaddr, cliaddr;
     struct hostent *clienthost;
@@ -25,74 +28,104 @@ int main(int argc, char **argv)
     int sd_udp;
     const int reuse = 1;
 
-    if (argc == 2)
-    {
-        port = atoi(argv[1]);
+    // Arguments Number Check
+  	if (argc != 2) {
+  		printf("Error Usage : %s port \n", argv[0]);
+  		exit(1);
+  	}
+
+    // Is port an integer?
+    len = 0;
+  	while (argv[1][len] != '\0') {
+  		if (argv[1][len] < '0' || argv[1][len] > '9') {
+  			printf("Argument passed is not a integer");
+  			exit(2);
+  		}
+  		len++;
+  	}
+
+    // 1024<=port<=65535
+    port = atoi(argv[1]);
+    if (port < 1024 || port > 65535) {
+		    printf("Error: incorrect number port ");
+		      exit(3);
     }
-    //set socket ecc
+
+    printf("Checks completed\n");
+
+    // Settting socket
     memset((char *)&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    servaddr.sin_addr.s_addr = INADDR_ANY;
     servaddr.sin_port = htons(port);
-    if ((sd_udp = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-    {
-        perror("Errore apertura socket UDP.");
-        exit(2);
+
+    // Socket creat
+    if ((sd_udp = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+        perror("Error creating socket");
+        exit(4);
     }
-    if (setsockopt(sd_udp, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) < 0)
-    {
-        perror("Set opzioni socker UDP");
-        exit(9);
+
+    // Socket options
+    if (setsockopt(sd_udp, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
+        perror("Set options socket UDP");
+        exit(5);
     }
-    if (bind(sd_udp, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
-    {
+
+    // Socket bindings
+    if (bind(sd_udp, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
         perror("Bind socket UDP");
-        exit(10);
+        exit(6);
     }
-    if (recvfrom(sd_udp, &req, sizeof(request), 0, (struct sockaddr *)&cliaddr, sizeof(struct sockaddr_in)) < 0)
-    {
+
+    printf("Settings and Bindings completed\n");
+
+    len = sizeof(struct sockaddr_in);
+    // Socket receive
+    if (recvfrom(sd_udp, &req, sizeof(req), 0,
+                  (struct sockaddr *) &cliaddr, &len) < 0){
         perror("Recvfrom error ");
+        exit(7);
     }
-    clienthost = gethostbyaddr((char *)&cliaddr.sin_addr, sizeof(cliaddr.sin_addr), AF_INET);
-    clienthost->h_name, (unsigned)ntohs(cliaddr.sin_port);
-    int fd_in = open(req.file_in, O_RDONLY);
-    if (fd_in < 0)
-    {
+
+    clienthost = gethostbyaddr((char *)&cliaddr.sin_addr,
+                                            sizeof(cliaddr.sin_addr), AF_INET);
+    if (clienthost == NULL){
+			printf("Client host information not found\n");
+    }
+		else{
+			printf("Operation required from: %s %i\nI will work on word %s of file %s\n",
+      clienthost->h_name, (unsigned) ntohs(cliaddr.sin_port), req.file_in, req.word);
+    }
+
+    // Open file and separting FAILURE from SUCCESS
+    if ((fd_in = open(req.file_in, O_RDONLY)) < 0) {
+        printf("Bad fileName\n");
         count = -1;
     }
-    else
-    {
+    else {
         count = 0;
         wordLen = strlen(req.word);
         char tmp_buff[wordLen];
-
         char *file_out[strlen(req.file_in) + 4];
         strcpy(file_out, req.file_in);
         strcat(file_out, ".tmp");
         int fd_out = open(file_out, O_WRONLY | O_CREAT, 0777);
 
-        while ((readed = read(fd_in, buff, DIM)) > 0)
-        {
-            for (i = 0; i < readed; i++)
-            {
-                if (req.word[j] == buff[i])
-                {
+        while ((readed = read(fd_in, buff, DIM)) > 0){
+            for (i = 0; i < readed; i++){
+                if (req.word[j] == buff[i]){
                     tmp_buff[j] = buff[i];
-                    for (; j < wordLen && i < readed; ++j)
-                    {
-                        if (req.word[j] == buff[i])
-                        {
+                    for (; j < wordLen && i < readed; ++j){
+                        if (req.word[j] == buff[i]){
                             tmp_buff[j] = buff[i++];
                         }
-                        else
-                        {
+                        else{
                             write(fd_out, tmp_buff, strlen(tmp_buff));
                             j = 0;
                             break;
                         }
                     }
-                    if (j == wordLen)
-                    {
+                    if (j == wordLen){
                         count++;
                         j = 0;
                     }
@@ -101,10 +134,20 @@ int main(int argc, char **argv)
             }
         }
 
-        close(fd_in);
+        // Closing file out and overwriting
         close(fd_out);
         rename(file_out, req.file_in);
-        sendto(sd_udp, &count, sizeof(count), 0, (struct sockaddr *)&cliaddr, sizeof(struct sockaddr));
     }
-    return 0;
+
+    // Closing file in
+    close(fd_in);
+    printf("Sending result\n");
+
+    // Sending result to Client
+    if(sendto(sd_udp, &count, sizeof(count), 0,
+                   (struct sockaddr *)&cliaddr, sizeof(struct sockaddr))<0){
+        perror("Error final sendto");
+        exit(8);
+    }
+    return EXIT_SUCCESS;
 }
