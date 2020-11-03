@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
         // Controllo che l'argomento "Port" sia composto da soli numeri
         for(i=0; i<strlen(argv[1]); i++) {
             if (argv[1][i] < '0' || argv[1][i] > '9') {
-                fprintf(stderr, "Error: port argument '%s' is not an only-digit!\n", argv[2]);
+                fprintf(stderr, "Error: port argument '%s' is not an only-digit!\n", argv[1]);
 
                 exit(EXIT_FAILURE);
             }
