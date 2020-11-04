@@ -187,9 +187,9 @@ int main(int argc, char *argv[]) {
 
                 // Creating a new file to substitute to the original
                 //char fileOutName[strlen(req.file_in) + 4]; --> this stinks
-				if( (fileOutName = (char *) malloc(strlen(req.file_in) * sizeof(char))) == NULL){
-					perror("String allocation failed: ");
-				}
+		if( (fileOutName = (char *) malloc(strlen(req.file_in) * sizeof(char))) == NULL){
+			perror("String allocation failed: ");
+		}
 				
                 sprintf(fileOutName, "%s.tmp", req.file_in);
                 printf("File Temp: %s\n", fileOutName);
@@ -202,7 +202,7 @@ int main(int argc, char *argv[]) {
                 // While I can read from file
                 do {
                     nRead = read(fdInput, buff, STR_MAX);
-                    if(nRead<=0) {
+                    if(nRead < 0) {
                         break;
                     }
                     // Checking the buff to contain the word
@@ -230,6 +230,7 @@ int main(int argc, char *argv[]) {
                 } while(nRead>0);
 
                 // Closing file out and Overwriting
+		free(fileOutName);
                 close(fdOutput);
                 remove(req.file_in);
                 rename(fileOutName, req.file_in);
