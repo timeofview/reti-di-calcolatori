@@ -7,14 +7,17 @@
 #include <netdb.h>
 #include <string.h>
 
+
 #define DIM 256
 #define PORT_MIN 1024
 #define PORT_MAX 65535
+
 
 typedef struct {
     char fileName[DIM];
     char wordName[DIM];
 } toSend;
+
 
 int main(int argc, char *argv[]) {
 
@@ -114,9 +117,6 @@ int main(int argc, char *argv[]) {
         }
 
         printf("FileName '%s' and wordName '%s' have been sent to the Server!\n", to_send.fileName, to_send.wordName);
-		
-		
-		
 		
         // ReadServerSize()
         serverSize = sizeof(serverAddr);

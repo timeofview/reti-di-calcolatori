@@ -4,86 +4,69 @@
 #include <fcntl.h>
 #include <string.h>
 
+
 #define PORT_MIN 1024
 #define PORT_MAX 65535
-
-/*
-	Il secondo Client, chiede ciclicamente all’utente il nome del direttorio, invia al server la
-	richiesta, riceve la lista di nomi di file remoti che stanno nei direttori contenuti nel direttorio
-	specificato,e la stampa a video
-*/
-
-
 #define STR_MAX 256
 
 
 int main(int argc, char * argv[]) {
 
-
     int sd, nRead, port, i;
     char dirName[STR_MAX], serverReply[STR_MAX];
     struct sockaddr_in serverAddr;
     struct hostent *serverHost;
-    struct timeval timeout; // Struct timeout, utilizzata per interrompere la connessione se scade
+
+    // Timeout struct, used to set a timeout
+    struct timeval timeout;
     timeout.tv_sec = 10;
     timeout.tv_usec = 0;
 
-
-
-    // Controllo argomenti
+    // Arguments Check
     if(argc != 3) {
         fprintf(stderr, "Error: invalid argument number!\nProgram usage: %s Address Port", argv[0]);
-
         exit(EXIT_FAILURE);
     }
 
-
-    // Controllo che l'argomento "Port" sia composto da soli numeri
+    // Check that argv is composed by numbers
     for(i=0; i<strlen(argv[2]); i++) {
         if (argv[2][i] < '0' || argv[2][i] > '9') {
             fprintf(stderr, "Error: port argument '%s' is not an only-digit!\n", argv[2]);
-
             exit(EXIT_FAILURE);
         }
     }
 
-
-    // Controllo che l'argomento "Port" non ecceda il limite massimo di 65K
-    // Converto la porta in intero e controllo che non super il limite
+    // Checks on port (isInteger()&&isBetween(1024,65535))
     port = atoi(argv[2]);
     if(port < PORT_MIN || port > PORT_MAX) {
 		fprintf(stderr, "Error: port needs to be between %d and %d!\n", PORT_MIN, PORT_MAX);
-		
 		exit(EXIT_FAILURE);
     }
 
     serverHost = gethostbyname(argv[1]);
     if(serverHost == NULL) {
         perror("Unknown Server error: ");
-
     }
 
-
-    // Setto a 0 il contenuto della variabile serverAddr
+    // Setting Address to 0
     memset((char*) &serverAddr, 0, sizeof(struct sockaddr_in));
 
-    // Setto i parametri di indirizzo Socket
-    serverAddr.sin_family = AF_INET; // Famiglia protocolli Internet
-    serverAddr.sin_addr.s_addr = ((struct in_addr*) (serverHost->h_addr))->s_addr; // Ottengo l'indirizzo
-    serverAddr.sin_port = htons(port); // Assegno la parta in base a ciò che l'utente mi ha inserito
+    // Server Address Parameters Initialisation
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = ((struct in_addr*) (serverHost->h_addr))->s_addr;
+    serverAddr.sin_port = htons(port);
 
-    // Chiedo ciclicamente all'untente il nome del direttorio
+    // Asking in a loop nameDir
     printf("Enter directory name [EOF to end]: ");
     while(scanf("%s", dirName) != EOF) {
 	
-		// Apertura Socket
+		// Socket Open
 		if((sd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 			perror("Socket error: ");
-
 			exit(EXIT_FAILURE);
 		}
 
-		// Setto il tempo di ricezione nelle opzioni della Socket
+		// Setting receiveTime in socket Options
 		if(setsockopt (sd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(struct timeval)) < 0) {
 			perror("Error while setting socket options: ");
 		}
@@ -91,48 +74,39 @@ int main(int argc, char * argv[]) {
 			perror("Error while setting socket options: ");
 		}
 
-
 		// Connect
 		if(connect(sd, (struct sockaddr *)&serverAddr, sizeof(struct sockaddr)) < 0) {
 			perror("Connect failed: ");
-
 			exit(EXIT_FAILURE);
 		}
 		
-		
-        // Invio della stringa
+        // Sending Result
         if(write(sd, dirName, strlen(dirName)) < 0) {
             perror("Send failed: ");
-
             continue;
         }
 
-        // Ricevo la lista delle Stringhe
-        //while((nRead = recv(sd, serverReply, STR_MAX * sizeof(char), 0)) > 0) {
+        // Receiving String list
         while((nRead = read(sd, serverReply, STR_MAX * sizeof(char))) > 0) {
 
-            // Errore receive
+            // Error receive
             if(nRead < 0) {
                 perror("Socket Read failed: ");
-
                 continue;
+            } else if(serverReply[0]=='.'){
+                printf("Cannot open Directory!\n");
+            } else {
+                printf("%s\n", serverReply);
             }
 
-            printf("%s\n", serverReply);
-
-            // Flusho la stringa
+            // String flush
             memset((char*) &serverReply, 0, STR_MAX * sizeof(char));
-            
-        } // fine while recv
+        }
 		
-		// Chiudo Socket
+		// SocketClose
 		close(sd);
         printf("Enter directory name [EOF to end]: ");
-    } // fine while
-
-
-    printf("\n++ End of communication! ++ \n");
-
-
+    }
+    printf("Communication Closed\n");
     return 0;
 }
