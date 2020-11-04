@@ -43,16 +43,11 @@ int main(int argc, char *argv[]) {
     const int reuse = 1;
     struct sockaddr_in clientAddr, serverAddr;
     struct hostent *clienthost;
-    char buff[STR_MAX];
-    char *errorString = "Cannot open Directory!\n";
+    char dirName[STR_MAX], buff[STR_MAX], *fileOutName, *errorString = "Cannot open Directory!\n";
     fd_set rset;
     request req;
-    char dirName[STR_MAX];
-    DIR *d;
-    DIR *d2;
-    // DirEntity, represent a Directory-Type Entity
-    struct dirent* dir;
-    struct dirent* dir2; 
+    DIR *d, *d2;
+    struct dirent *dir, *dir2; // DirEntity, represent a Directory-Type Entity
 
     // Arguments Check
     if(argc == 1) { //Uses default port
@@ -60,7 +55,7 @@ int main(int argc, char *argv[]) {
     } else if(argc != 2) {
         fprintf(stderr, "Error: invalid argument number!\nProgram usage: %s Port[OPTIONAL]", argv[0]);
         exit(EXIT_FAILURE);
-    } else { 
+    } else {
 
         // Check that argv is composed by numbers
         for(i=0; i<strlen(argv[1]); i++) {
@@ -160,7 +155,7 @@ int main(int argc, char *argv[]) {
             if(errno == EINTR) {
                 continue;
             } else {
-                perror("Select error: ");
+                perror("Select failed: ");
                 exit(EXIT_FAILURE);
             }
         }
@@ -172,14 +167,14 @@ int main(int argc, char *argv[]) {
 
             // Receiving a request from client
             if (recvfrom(sdUdp, &req, sizeof(req), 0, (struct sockaddr *) &clientAddr, &clientSize) < 0) {
-                perror("Recvfrom error ");
+                perror("Recvfrom failed: ");
                 continue;
             }
 
             // isClientValid()
             clienthost = gethostbyaddr((char *)&clientAddr.sin_addr, sizeof(clientAddr.sin_addr), AF_INET);
             if (clienthost == NULL) {
-                printf("Client host information not found\n");
+                fprintf(stderr, "Client host information not found\n");
             } else {
                 printf("Deleting word '%s' from file '%s'...\n", req.word, req.file_in);
             }
@@ -189,9 +184,13 @@ int main(int argc, char *argv[]) {
                 perror("Cannot open file: ");
                 cntFound = -1;
             } else {
-                
+
                 // Creating a new file to substitute to the original
-                char fileOutName[strlen(req.file_in) + 4];
+                //char fileOutName[strlen(req.file_in) + 4]; --> this stinks
+				if( (fileOutName = (char *) malloc(strlen(req.file_in) * sizeof(char))) == NULL){
+					perror("String allocation failed: ");
+				}
+				
                 sprintf(fileOutName, "%s.tmp", req.file_in);
                 printf("File Temp: %s\n", fileOutName);
                 fdOutput = open(fileOutName, O_WRONLY | O_CREAT, 0777);
@@ -203,7 +202,7 @@ int main(int argc, char *argv[]) {
                 // While I can read from file
                 do {
                     nRead = read(fdInput, buff, STR_MAX);
-                    if(nRead<=0){
+                    if(nRead<=0) {
                         break;
                     }
                     // Checking the buff to contain the word
@@ -268,12 +267,12 @@ int main(int argc, char *argv[]) {
             if((pid = fork()) == 0) { // Child
                 printf("Client connected\n");
 
-                // Reading from Directory from Client
+                // Reading Directory name from Client
                 if(read(sdTcp, &dirName, STR_MAX * sizeof(char)) < 0) {
                     perror("Read failed: ");
                     exit(EXIT_FAILURE);
                 }
-                
+
                 printf("Received the directory name: '%s'\n" , dirName);
 
                 // Opening Directory
