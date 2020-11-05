@@ -22,15 +22,11 @@
 #define BACKLOG_MAX 10
 
 
-// Function to handle children
-void childHandler(int signum) {
-    int status;
-    printf("Executing handler SIGCHLD!\n");
-    wait(&status);
-}
+// Function prototypes
+void childHandler(int);
 
 
-// Struct to represent a UDP request
+// UDP request Struct
 typedef struct {
     char file_in[STR_MAX];
     char word[STR_MAX];
@@ -39,15 +35,17 @@ typedef struct {
 
 int main(int argc, char *argv[]) {
 
+
     int sdUdp, sdListen, sdTcp, port, clientSize, pid, i, j, numfds, cntFound, fdInput, fdOutput, nRead, toRemoveLen;
     const int reuse = 1;
     struct sockaddr_in clientAddr, serverAddr;
     struct hostent *clienthost;
-    char dirName[STR_MAX], buff[STR_MAX], *fileOutName, *errorString = "Cannot open Directory!\n";
+    char buff[STR_MAX], dirName[STR_MAX],  *fileOutName;
     fd_set rset;
     request req;
     DIR *d, *d2;
     struct dirent *dir, *dir2; // DirEntity, represent a Directory-Type Entity
+
 
     // Arguments Check
     if(argc == 1) { //Uses default port
@@ -125,7 +123,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Hooking childHandler function
+    // C
     signal(SIGCHLD, childHandler);
 
     // Clearing descriptors set
@@ -138,8 +136,9 @@ int main(int argc, char *argv[]) {
         numfds = sdUdp + 1;
     }
 
-    printf("Server has been correctly initialized\n");
-    // Declaring size of client
+    printf("++ Server initialized! Waiting for Client connections! ++\n\n");
+
+    // Size of client
     clientSize = sizeof(struct sockaddr_in);
 
     // mainLoop()
@@ -151,11 +150,15 @@ int main(int argc, char *argv[]) {
 
         // Extracts the first request
         if(select(numfds, &rset, NULL, NULL, NULL) < 0) {
+
             // if Signal occurred during the system call
             if(errno == EINTR) {
+
                 continue;
             } else {
-                perror("Select failed: ");
+
+                perror("Select error: ");
+
                 exit(EXIT_FAILURE);
             }
         }
@@ -167,30 +170,36 @@ int main(int argc, char *argv[]) {
 
             // Receiving a request from client
             if (recvfrom(sdUdp, &req, sizeof(req), 0, (struct sockaddr *) &clientAddr, &clientSize) < 0) {
+
                 perror("Recvfrom failed: ");
+
                 continue;
             }
 
             // isClientValid()
             clienthost = gethostbyaddr((char *)&clientAddr.sin_addr, sizeof(clientAddr.sin_addr), AF_INET);
             if (clienthost == NULL) {
-                fprintf(stderr, "Client host information not found\n");
+
+                fprintf(stderr, "Client host information not found!\n");
             } else {
+
                 printf("Deleting word '%s' from file '%s'...\n", req.word, req.file_in);
             }
 
             // File Open and separating FAILURE from SUCCESS
             if ((fdInput = open(req.file_in, O_RDONLY)) < 0) {
+
                 perror("Cannot open file: ");
                 cntFound = -1;
             } else {
 
                 // Creating a new file to substitute to the original
                 //char fileOutName[strlen(req.file_in) + 4]; --> this stinks
-		if( (fileOutName = (char *) malloc(strlen(req.file_in) * sizeof(char))) == NULL){
-			perror("String allocation failed: ");
-		}
-				
+                if( (fileOutName = (char *) malloc(strlen(req.file_in) * sizeof(char))) == NULL) {
+
+                    perror("String allocation failed: ");
+                }
+
                 sprintf(fileOutName, "%s.tmp", req.file_in);
                 printf("File Temp: %s\n", fileOutName);
                 fdOutput = open(fileOutName, O_WRONLY | O_CREAT, 0777);
@@ -198,39 +207,39 @@ int main(int argc, char *argv[]) {
                 // Length of word to remove and initializing wordCounter
                 toRemoveLen = strlen(req.word);
                 cntFound = 0;
-                char zero = 0;
+
                 // While I can read from file
                 do {
                     nRead = read(fdInput, buff, STR_MAX);
-                    if(nRead < 0) {
+                    if(nRead < 0) { // Era <= 0
                         break;
                     }
-                    // Checking the buff to contain the word
+                    // Checking if the buff contain the word
                     for(i=0; i<nRead; i++) {
+
                         // Is the first char of the word is found
                         if(buff[i] == req.word[0]) {
-                            // I Check other chars toRemoveLen-times
+
+                            // Checking other chars toRemoveLen-times
                             for(j=0; j<toRemoveLen; j++) {
-                                printf("(%c,%c)",buff[j+i],req.word[j]);
+
                                 // If i find different chars I give up
                                 if(buff[j+i] != req.word[j]) {
                                     break;
                                 }
                             }
-                            printf("\n");
-                            printf("(%d,%d)",j,i);
                             // If I find the word and it is not a substring -> Increase counter, increase iterator and don't write
                             if(j == toRemoveLen && (buff[j+i] == ' ' || buff[j+i] == '\t' || buff[j+i] == '\n' || i+j == nRead)) {
+
                                 i += toRemoveLen;
                                 cntFound++;
                             }
                         }
                         write(fdOutput, &buff[i], sizeof(char));
                     }
-                } while(nRead>0);
+                } while(nRead > 0);
 
                 // Closing file out and Overwriting
-		free(fileOutName);
                 close(fdOutput);
                 remove(req.file_in);
                 rename(fileOutName, req.file_in);
@@ -238,6 +247,7 @@ int main(int argc, char *argv[]) {
 
             // Closing file in
             close(fdInput);
+            free(fileOutName);
             printf("Sending %d to Client...\n", cntFound);
 
             // Sending result to Client
@@ -255,10 +265,13 @@ int main(int argc, char *argv[]) {
 
             // Extracting the request on the queue
             if((sdTcp = accept(sdListen, (struct sockaddr *)&clientAddr, &clientSize)) < 0 ) {
+
                 // if Signal occurred during the system call
                 if(errno == EINTR) {
+
                     continue;
                 } else {
+
                     perror("Accept failed: ");
                     continue;
                 }
@@ -266,57 +279,72 @@ int main(int argc, char *argv[]) {
 
             // Children fork
             if((pid = fork()) == 0) { // Child
-                printf("Client connected\n");
+                printf("Client connected and fork() executed!\n\n");
 
-                // Reading Directory name from Client
+                // Reading directory name from Client
                 if(read(sdTcp, &dirName, STR_MAX * sizeof(char)) < 0) {
                     perror("Read failed: ");
                     exit(EXIT_FAILURE);
                 }
 
-                printf("Received the directory name: '%s'\n" , dirName);
+                printf("Received the directory name: '%s'\n\n" , dirName);
 
-                // Opening Directory
+                // Apro la directory del Client
                 d = opendir(dirName);
 
-                // if opendir is successful
+
+                // Se sono riuscito ad aprire la directory
                 if(d) {
-                    printf("\t'%s' Directory correctly opened\n", dirName);
-                    // Iterating over all directories
+
+                    printf("\t'%s' Directory correctly opened!\n", dirName);
+
+                    // Itero sui file della directory
                     while((dir = readdir(d)) != NULL) {
-                        // If dir is a directory
-                        if((dir->d_type == DT_DIR)&&(dir->d_name[0]!='.')) {
-                            // Open the subdir
+
+                        // Se "dir" è una directory
+                        if(dir->d_type == DT_DIR) {
+
+
+                            // Entro nella cartella
                             d2  = opendir(dir->d_name);
-                            // If this subdir is a directory
+
+                            // Se la cartella è valida
                             if(d2) {
+
                                 printf("\t\t'%s' SubDirectory correctly opened!\n", dir->d_name);
-                                // Iterating over all subsubdirectories
+
                                 while ((dir2 = readdir(d2)) != NULL) {
+
                                     printf("\t\t\t'%s' File\n", dir2->d_name);
-                                    // if !isHidden()
+
+                                    // Escludo le Directory nascoste
                                     if(dir2->d_name[0] != '.') {
-                                        // Sending through Socket TCP
+
+                                        // Invio della stringa tramite Socket TCP
                                         if(write(sdTcp, dir2->d_name, sizeof(dir2->d_name)) < 0) {
                                             perror("Write failed: ");
+
                                             continue;
                                         }
                                         printf("\t\t\t\tFile '%s' has been sent to the Client!\n", dir2->d_name);
                                     }
-                                }
-                                // Closing subdirectory
+                                }//fine while dir 2
+
+                                // Chiudo la SubDirectory
                                 closedir(d2);
-                            } else {
+                            }else { // fine if(dir->d_type == DT_DIR)
                                 continue;
                             }
                         }
-                    }
 
-                    // Closing directory
+                    } // fine while dir 1
+
+                    // Chiudo la directory iniziale
                     closedir(d);
 
-                    // Shutdown Writing Stream
+                    // Chiudo lo stream di scrittura
                     shutdown(sdTcp, SHUT_WR);
+
                 } else { // If directory has not been opened
                     perror("Main Directory open error: ");
 
@@ -329,13 +357,26 @@ int main(int argc, char *argv[]) {
                 // Closing communications
                 close(sdTcp);
                 exit(EXIT_SUCCESS);
+
             } else if(pid > 0) { // Father
+
                 continue;
-            } else {
-                perror("Fork error: ");
+            } else { // Error
+
+                perror("Fork failed: ");
+
                 continue;
             }
         }
     }
     return 0;
+}
+
+
+void childHandler(int signum) {
+
+    int status;
+
+    printf("\nExecuting childHandler!\n");
+    wait(&status);
 }
