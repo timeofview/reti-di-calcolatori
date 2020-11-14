@@ -19,7 +19,7 @@ public class Client {
         String operation;
 
         try {
-            OpInterface server = (OpInterface) Naming.lookup("//" + args[0] + ":" + args[1] + "/" + args[2]);
+            RemOp server = (RemOp) Naming.lookup("//" + args[0] + ":" + args[1] + "/" + args[2]);
             try {
                 System.out.println("Scrivi il nome dell'operazione");
                 while ((operation = reader.readLine()) != null) {
@@ -36,7 +36,6 @@ public class Client {
                             System.out.println("Scrivi il nome dell'operazione");
                             continue;
                         }
-                        System.out.println("f");
                         try {
                             System.out.println("Il numero delle righe che " +
                                     "contengono un numero di parole maggiore dell’intero inviato: "
@@ -57,7 +56,6 @@ public class Client {
                             System.out.println("Scrivi il nome dell'operazione");
                             continue;
                         }
-                        System.out.println("f");
                         try {
                             System.out.println("Numero di righe presenti nel file modificato: "
                                     + server.deleteRow(filename, numRow));
