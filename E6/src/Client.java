@@ -38,7 +38,7 @@ public class Client {
                         }
                         try {
                             System.out.println("Il numero delle righe che " +
-                                    "contengono un numero di parole maggiore dell’intero inviato: "
+                                    "contengono un numero di parole maggiore dell'intero inviato: "
                                     + server.countRow(filename, threshod));
                         } catch (RemoteException e) {
                             e.printStackTrace();

@@ -22,7 +22,7 @@ public class ServerImpl extends UnicastRemoteObject implements RemOp {
         String line;
         try {
             while ((line = br.readLine()) != null) {
-                // Se il numero di parole è maggiore della soglia passata dal'utente
+                // Se il numero di parole e' maggiore della soglia passata dal'utente
                 if (line.split("\\s+").length > threshold) {
                     result++;
                 }
@@ -85,7 +85,7 @@ public class ServerImpl extends UnicastRemoteObject implements RemOp {
         try {
             LocateRegistry.createRegistry(Integer.valueOf(args[0]));
             ServerImpl serverRMI = new ServerImpl();
-            Naming.rebind("//" + "192.168.1.130" + ":" + args[0] + "/" + args[1], serverRMI);
+            Naming.rebind("//" + "localhost" + ":" + args[0] + "/" + args[1], serverRMI);
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(2);
