@@ -24,13 +24,13 @@ public class Client {
                 System.out.println("Scrivi il nome dell'operazione");
                 while ((operation = reader.readLine()) != null) {
                     if (operation.equalsIgnoreCase("count")) {
-                        int threshod;
+                        int threshold;
                         String filename;
                         System.out.println("Il nome del file: ");
                         filename = reader.readLine();
                         System.out.println("Lunghezza: ");
                         try {
-                            threshod = Integer.valueOf(reader.readLine());
+                            threshold = Integer.valueOf(reader.readLine());
                         } catch (NumberFormatException e) {
                             e.printStackTrace();
                             System.out.println("Scrivi il nome dell'operazione");
@@ -39,7 +39,7 @@ public class Client {
                         try {
                             System.out.println("Il numero delle righe che " +
                                     "contengono un numero di parole maggiore dell'intero inviato: "
-                                    + server.countRow(filename, threshod));
+                                    + server.countRow(filename, threshold));
                         } catch (RemoteException e) {
                             e.printStackTrace();
                         }
