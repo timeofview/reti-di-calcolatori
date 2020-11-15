@@ -39,33 +39,42 @@ public class ServerImpl extends UnicastRemoteObject implements RemOp {
     public int deleteRow(String fileName, int numRow) throws RemoteException {
         int rows = 0;
         BufferedReader reader;
-        PrintWriter writer;
-        File originalFile;
-        File temp;
-        String line;
-
+        File originalFile = new File(fileName);
         try {
-            originalFile = new File(fileName);
             reader = new BufferedReader(new FileReader(originalFile));
-            temp = new File(fileName + "_tmp.txt");
-            writer = new PrintWriter(new FileWriter(temp));
-            while ((line = reader.readLine()) != null) {
+            while (reader.readLine() != null && rows < numRow) {
                 rows++;
-                if (rows != numRow) {
-                    writer.println(line);
-                }
             }
             reader.close();
-            writer.close();
-            originalFile.delete();
-            temp.renameTo(originalFile);
             if (rows < numRow)
                 throw new RemoteException("Non e' stato possibile eliminare riga " + numRow
                         + ", numero di righe presenti nel file: " + rows);
         } catch (IOException e) {
             throw new RemoteException("Errore durante la lettura");
         }
-        return rows - 1;
+        File temp;
+        PrintWriter writer;
+        String line;
+        try {
+            reader = new BufferedReader(new FileReader(originalFile));
+            temp = new File(fileName + "_tmp.txt");
+            writer = new PrintWriter(new FileWriter(temp));
+            rows = 1;
+
+            while ((line = reader.readLine()) != null) {
+                if (rows != numRow) {
+                    writer.println(line);
+                }
+                rows++;
+            }
+            writer.close();
+            reader.close();
+            originalFile.delete();
+            temp.renameTo(originalFile);
+        } catch (IOException e) {
+            throw new RemoteException("Errore durante la lettura");
+        }
+        return rows - 2;
     }
 
     public static void main(String[] args) {
