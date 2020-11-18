@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
@@ -55,7 +56,7 @@ public class OpImpl implements Serializable, OpInterface {
     // Prende in ingresso il nome del file, elimina la riga passata come  restituisce un intero, 
     
     //@Override
-    public int deleteRow(String fileName, int numRow) throws RemoteException {
+    public synchronized int deleteRow(String fileName, int numRow) throws RemoteException {
         	
     	int rows = 0;
         BufferedReader reader; 
