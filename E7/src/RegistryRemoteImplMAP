@@ -2,6 +2,9 @@ import java.rmi.Naming;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RemoteRegistryImpl extends UnicastRemoteObject implements RemoteRegistryTagClient, RemoteRegistryTagServer {
     final int tableLength = 100;
