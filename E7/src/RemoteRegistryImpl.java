@@ -9,6 +9,11 @@ public class RemoteRegistryImpl extends UnicastRemoteObject implements RemoteReg
 
     protected RemoteRegistryImpl() throws RemoteException {
         super();
+        for (int i = 0; i < tableLength; i++) {//Ma quant'e' elegante, sembra proprio un'opera d'arte!!!1111UNO!!
+            table[i][0] = null;
+            table[i][1] = null;
+            table[i][2] = null;
+        }
     }
 
     public synchronized Remote search(String logicName)
@@ -131,34 +136,22 @@ public class RemoteRegistryImpl extends UnicastRemoteObject implements RemoteReg
     }
 
     public static void main(String[] args) {
-        int registryRemotoPort = 1099;
-        String registryRemotoHost = "localhost";
-        String registryRemotoName = "RegistryRemoto";
-        if (args.length != 0 && args.length != 1) // countrollo args
-        {
-            System.out.println("...");
+
+        if (args.length != 3) {
+            System.out.println("Usage: ip port service");
             System.exit(1);
         }
-        if (args.length == 1) {
-            try {
-                registryRemotoPort = Integer.parseInt(args[0]);
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.exit(1);
-            }
 
-            String completeName = "//" + registryRemotoHost + ":" +
-                    registryRemotoPort + "/" + registryRemotoName;
-            try {
-                RemoteRegistryImpl serverRMI =
-                        new RemoteRegistryImpl();
-                Naming.rebind(completeName, serverRMI);
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.exit(2);
-            }
+        String completeName = "//" + args[0] + ":" +
+                args[1] + "/" + args[2];
+        try {
+            RemoteRegistryImpl serverRMI =
+                    new RemoteRegistryImpl();
+            Naming.rebind(completeName, serverRMI);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(2);
         }
     }
-
-
 }
+
