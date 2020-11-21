@@ -1,5 +1,5 @@
 import java.rmi.RemoteException;
 
-interface RemoteRegistryTagClient extends RemoteRegistyClient {
+interface RemoteRegistryTagClient extends RemoteRegistryClient {
     public String[] searchTag(String tag) throws RemoteException;
 }
