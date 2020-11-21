@@ -10,9 +10,9 @@ public interface RemoteRegistryServer
     public boolean add(String logicName,
                        Remote reference) throws RemoteException;
 
-    public boolean deleteFirst(String nomeLogico)
+    public boolean deleteFirst(String logicName)
             throws RemoteException;
 
-    public boolean deleteAll(String nomeLogico)
+    public boolean deleteAll(String logicName)
             throws RemoteException;
 }
