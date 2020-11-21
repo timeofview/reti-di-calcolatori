@@ -1,5 +1,5 @@
 import java.rmi.RemoteException;
 
 interface RemoteRegistryTagServer extends RemoteRegistryServer {
-    public boolean bindTag(String tag, String serverLogicName) throws RemoteException;
+    public boolean bindTag( String serverLogicName,String tag) throws RemoteException;
 }

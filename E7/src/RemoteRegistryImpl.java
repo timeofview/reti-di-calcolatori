@@ -3,66 +3,71 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 
-public class RemoteRegistryImpl extends UnicastRemoteObject {
+public class RemoteRegistryImpl extends UnicastRemoteObject implements RemoteRegistryTagClient, RemoteRegistryTagServer {
     final int tableLength = 100;
-    Object[][] table = new Object[100][2];
+    Object[][] table = new Object[100][3];
 
-    protected RemoteRegistryIml(int port) throws RemoteException {
-        super(port);
+    protected RemoteRegistryImpl() throws RemoteException {
+        super();
     }
 
-    public synchronized Remote search(String nomeLogico)
+    public synchronized Remote search(String logicName)
             throws RemoteException {
-        Remote risultato = null;
-        if (nomeLogico == null) return null;
+        Remote result = null;
+        if (logicName == null) return null;
         for (int i = 0; i < tableLength; i++)
-            if (nomeLogico.equals((String) table[i][0])) {
-                risultato = (Remote) table[i][1];
+            if (logicName.equals((String) table[i][0])) {
+                result = (Remote) table[i][1];
                 break;
             }
-        return risultato;
+        return result;
+    }
+
+    @Override
+    public Remote[] searchall(String logicName) throws RemoteException {
+        return new Remote[0];
     }
 
     public synchronized Remote[] searchAll(String
-                                                    nomeLogico) throws RemoteException {
-        int cont = 0;
-        if (nomeLogico == null) return new Remote[0];
+                                                   logicName) throws RemoteException {
+        int count = 0;
+        if (logicName == null) return new Remote[0];
         for (int i = 0; i < tableLength; i++)
-            if (nomeLogico.equals((String) table[i][0]))
-                cont++;
-        Remote[] risultato = new Remote[cont];
-// usato come indice per il riempimento
-        cont = 0;
+            if (logicName.equals((String) table[i][0]))
+                count++;
+        Remote[] result = new Remote[count];
+
+        count = 0;
         for (int i = 0; i < tableLength; i++)
-            if (nomeLogico.equals((String) table[i][0]))
-                risultato[cont++] = (Remote) table[i][1];
-        return risultato;
+            if (logicName.equals((String) table[i][0]))
+                result[count++] = (Remote) table[i][1];
+        return result;
     }
 
     public synchronized Object[][] getAll()
             throws RemoteException {
-        int cont = 0;
+        int count = 0;
         for (int i = 0; i < tableLength; i++)
-            if (table[i][0] != null) cont++;
-
-        cont = 0;
+            if (table[i][0] != null) count++;
+        Object[][] result = new Object[count][2];
+        count = 0;
         for (int i = 0; i < tableLength; i++)
             if (table[i][0] != null) {
-                risultato[cont][0] = table[i][0];
-                risultato[cont][1] = table[i][1];
+                result[count][0] = table[i][0];
+                result[count][1] = table[i][1];
             }
-        return risultato;
+        return result;
     }
 
-    public synchronized boolean add(String nomeLogico,
-                                         Remote riferimento) throws RemoteException {
+    public synchronized boolean add(String logicName,
+                                    Remote riferimento) throws RemoteException {
         boolean result = false;
 
-        if ((nomeLogico == null) || (riferimento == null))
-            return risultato;
+        if ((logicName == null) || (riferimento == null))
+            return result;
         for (int i = 0; i < tableLength; i++)
             if (table[i][0] == null) {
-                table[i][0] = nomeLogico;
+                table[i][0] = logicName;
                 table[i][1] = riferimento;
                 result = true;
                 break;
@@ -71,37 +76,65 @@ public class RemoteRegistryImpl extends UnicastRemoteObject {
     }
 
     public synchronized boolean deleteFirst
-            (String nomeLogico) throws RemoteException {
-        boolean risultato = false;
-        if (nomeLogico == null) return risultato;
+            (String logicName) throws RemoteException {
+        boolean result = false;
+        if (logicName == null) return result;
         for (int i = 0; i < tableLength; i++)
-            if (nomeLogico.equals((String) table[i][0])) {
+            if (logicName.equals((String) table[i][0])) {
                 table[i][0] = null;
                 table[i][1] = null;
-                risultato = true;
+                result = true;
                 break;
             }
-        return risultato;
+        return result;
     }
 
     public synchronized boolean deleteAll
-            (String nomeLogico) throws RemoteException {
-        boolean risultato = false;
-        if (nomeLogico == null) return risultato;
+            (String logicName) throws RemoteException {
+        boolean result = false;
+        if (logicName == null) return result;
         for (int i = 0; i < tableLength; i++)
-            if (nomeLogico.equals((String) table[i][0])) {
-                if (risultato == false) risultato = true;
+            if (logicName.equals((String) table[i][0])) {
+                if (result == false) result = true;
                 table[i][0] = null;
                 table[i][1] = null;
             }
-        return risultato;
+        return result;
+    }
+
+    @Override
+    public String[] searchTag(String tag) throws RemoteException {
+        String result[] = new String[tableLength];
+        int index = 0;
+        for (int i = 0; i < tableLength; i++) {
+            if (tag.equals(table[i][2])) {
+                result[index++] = (String) table[i][0];//uccidetemi, sto castando object a string;
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public boolean bindTag(String serverLogicName, String tag) throws RemoteException {
+        boolean result = false;
+        try {
+            for (int i = 0; i < tableLength; i++) {
+                if (serverLogicName.equals(table[i][0])) {
+                    table[i][2] = tag;
+                    result = true;
+                }
+            }
+        } catch (NullPointerException npe) {
+            throw new RemoteException(npe.getMessage());
+        }
+        return result;
     }
 
     public static void main(String[] args) {
         int registryRemotoPort = 1099;
         String registryRemotoHost = "localhost";
         String registryRemotoName = "RegistryRemoto";
-        if (args.length != 0 && args.length != 1) // Controllo args
+        if (args.length != 0 && args.length != 1) // countrollo args
         {
             System.out.println("...");
             System.exit(1);
@@ -112,15 +145,20 @@ public class RemoteRegistryImpl extends UnicastRemoteObject {
             } catch (Exception e) {
                 e.printStackTrace();
                 System.exit(1);
-        }
+            }
 
-        String completeName = "//" + registryRemotoHost + ":" +
-                registryRemotoPort + "/" + registryRemotoName;
-        try {
-            RemoteRegistryIml serverRMI =
-                    newRegistryRemotoImpl();
-            Naming.rebind(completeName, serverRMI);
-        } catch (Exception e) {...}
+            String completeName = "//" + registryRemotoHost + ":" +
+                    registryRemotoPort + "/" + registryRemotoName;
+            try {
+                RemoteRegistryImpl serverRMI =
+                        new RemoteRegistryImpl();
+                Naming.rebind(completeName, serverRMI);
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.exit(2);
+            }
+        }
     }
-}
+
+
 }
