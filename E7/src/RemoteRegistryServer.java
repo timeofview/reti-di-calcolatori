@@ -2,7 +2,7 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 public interface RemoteRegistryServer
-        extends RemoteRegistyClient {
+        extends RemoteRegistryClient {
 
     public Object[][] getAll()
             throws RemoteException;
