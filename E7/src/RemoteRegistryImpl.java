@@ -22,10 +22,9 @@ public class RemoteRegistryImpl extends UnicastRemoteObject implements RemoteReg
 
     protected RemoteRegistryImpl() throws RemoteException {
         super();
-        for (int i = 0; i < tableLength; i++) {//Ma quant'e' elegante, sembra proprio un'opera d'arte!!!1111UNO!!
+        for (int i = 0; i < tableLength; i++) {
             table[i][0] = null;
             table[i][1] = null;
-            table[i][2] = null;
         }
     }
     
