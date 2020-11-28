@@ -29,14 +29,14 @@ file_out *file_scan_1_svc(file_in *file, struct svc_req *rp){
 		nread = fread(buff, sizeof(char), sizeof(buff), fd);
 		for( i=0 ; i<nread-1; i++){
 			chars++;
-			if((buff[i+1]=="\n" || buff[i+1] =="\t" || buff[i+1]==" ") && 
-					(buff[i]!="\n" && buff[i] !="\t" && buff[i]!=" ")){
+			if((buff[i+1]=='\n' || buff[i+1] =='\t' || buff[i+1]==' ') && 
+					(buff[i]!='\n' && buff[i] !='\t' && buff[i]!=' ')){
 				/*entro in questo if se trovo un carattere
 					 seguito da un carattere "separatore" */
 				words++;
 			}
 			
-			if(buff[i] == "\n")
+			if(buff[i] == '\n')
 				rows++;
 
 		}
@@ -51,11 +51,12 @@ file_out *file_scan_1_svc(file_in *file, struct svc_req *rp){
 
 
 
-/* //METODO 1
+/* //METODO 1 uso di LSEEK : controllo solo i Regularfile
 int *dir_scan_1_svc( dir_in *dirIn, struct svc_req *rp){
 	
 	DIR *d;
 	struct dirent *dir;
+	char path[BUFF_DIM];
 	static int count=0;
 	int fd;
 	int size;
@@ -69,7 +70,8 @@ int *dir_scan_1_svc( dir_in *dirIn, struct svc_req *rp){
 	
 	while((dir = readdir(d)) !=NULL){
 		if(dir->d_type == DT_REG){// se è un file (regolare)
-			fd = fopen(dir->d_name, "r");
+			sprintf(path, "%s/%s", dirIn->dirName, dir->d_name);
+			fd = fopen(path, "r");
 			size = lseek(fd, 0, SEEK_END); // seek to end of file
 			if(size >= dirIn->num)
 				count++;
@@ -84,7 +86,7 @@ int *dir_scan_1_svc( dir_in *dirIn, struct svc_req *rp){
 
 
 */
-/*METODO 2
+/*METODO 2: uso di stat()--> controllo tutto
 richiede:
 #include <sys/stat.h>
 */
@@ -94,7 +96,7 @@ int *dir_scan_1_svc( dir_in *dirIn, struct svc_req *rp){
 	struct dirent *dir;
 	struct stat st;
 	static int count=0;
-
+	char path[BUFF_DIM];
 
 	d = opendir( dirIn->dirName);
 	if(!d){
@@ -104,9 +106,15 @@ int *dir_scan_1_svc( dir_in *dirIn, struct svc_req *rp){
 	
 	printf("\t'%s' Directory correctly opened!\n", dirIn->dirName);
 	while((dir = readdir(d)) !=NULL){
-		stat(dir->d_name, &st);
-		if(st.st_size >= dirIn->num)
-			count++;
+		if(dir->d_name[0] != '.'){
+			sprintf(path, "%s/%s", dirIn->dirName, dir->d_name); // creo PATH = DirIn/NomeFile
+			if(stat(path, &st)==0){ //prendo le info del file di PATH path
+				if(&st.st_size > dirIn->num)
+					count++;
+			}else{
+				perror("Impossibile aprire File");			
+			}
+		}	
 	}
 	return (&count);
 }
