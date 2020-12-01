@@ -10,7 +10,9 @@ xdr_file_in (XDR *xdrs, file_in *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_string (xdrs, &objp->fileName, 50))
+	int i;
+	 if (!xdr_vector (xdrs, (char *)objp->fileName, 50,
+		sizeof (char), (xdrproc_t) xdr_char))
 		 return FALSE;
 	return TRUE;
 }
@@ -20,7 +22,9 @@ xdr_dir_in (XDR *xdrs, dir_in *objp)
 {
 	register int32_t *buf;
 
-	 if (!xdr_string (xdrs, &objp->dirName, 50))
+	int i;
+	 if (!xdr_vector (xdrs, (char *)objp->dirName, 50,
+		sizeof (char), (xdrproc_t) xdr_char))
 		 return FALSE;
 	 if (!xdr_int (xdrs, &objp->num))
 		 return FALSE;

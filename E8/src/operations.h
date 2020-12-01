@@ -15,12 +15,12 @@ extern "C" {
 
 
 struct file_in {
-	char *fileName;
+	char fileName[50];
 };
 typedef struct file_in file_in;
 
 struct dir_in {
-	char *dirName;
+	char dirName[50];
 	int num;
 };
 typedef struct dir_in dir_in;

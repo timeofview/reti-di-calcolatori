@@ -1,9 +1,9 @@
 struct file_in{
-    string fileName <50>;
+    char fileName[50];
 };
 
 struct dir_in{
-    string dirName <50>;
+    char dirName[50];
     int num;
 };
 

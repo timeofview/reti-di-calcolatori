@@ -1,38 +1,53 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <rpc/rpc.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <rpc/rpc.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
+
 #include "operations.h"
+
 #define BUFF_DIM 256
+
 
 file_out *file_scan_1_svc(file_in *file, struct svc_req *rp){
 	
-	int nread, i,  chars=0, words=0, rows=1;
+	
+	int fd, nread, i,  chars=0, words=0, rows=1;
 	char buff[BUFF_DIM];	
-	file_out result;
-	FILE *fd;
+	static file_out result;
 
-	fd = fopen(file->fileName, "r");
 
-	if(fd == NULL){
-		fprintf(stderr, "errore nell'apertura del file");
+
+	printf("Metodo file_scan lanciato!\n");
+	
+	fd = open(file->fileName, O_RDONLY);
+	
+	if(fd < 0){
+		fprintf(stderr, "Errore: apertura del file!");
 		result.chars = -1;
 		result.strings = -1;
 		result.rows = -1;
 		return (&result);
 	}
+	
+	
+	printf("File aperto con successo!\n");
+	
+	// Finché l' I/O Pointer non è arrivato a fine file
+	while((nread = read(fd, buff, sizeof(char) * BUFF_DIM)) > 0){ 
 
-	while(!feof(fd)){ //finchè l' I/O Pointer non è arrivato a fine file
-		
-		nread = fread(buff, sizeof(char), sizeof(buff), fd);
-		for( i=0 ; i<nread-1; i++){
+		for(i=0 ; i<nread-1; i++){
+			
 			chars++;
-			if((buff[i+1]=='\n' || buff[i+1] =='\t' || buff[i+1]==' ') && 
-					(buff[i]!='\n' && buff[i] !='\t' && buff[i]!=' ')){
-				/*entro in questo if se trovo un carattere
-					 seguito da un carattere "separatore" */
+			
+			// Entro in questo if se trovo un carattere seguito da un carattere "separatore"
+			if((buff[i+1]=='\n' || buff[i+1] == '\t' || buff[i+1] == ' ') && (buff[i] != '\n' && buff[i] != '\t' && buff[i] !=' ')) {	
 				words++;
 			}
 			
@@ -46,75 +61,58 @@ file_out *file_scan_1_svc(file_in *file, struct svc_req *rp){
 	result.strings = words;
 	result.rows = rows;
 
+	close(fd);
+	
+	printf("Sono prima del return!\n");
+	
 	return (&result);
 }
 
 
-
-/* //METODO 1 uso di LSEEK : controllo solo i Regularfile
-int *dir_scan_1_svc( dir_in *dirIn, struct svc_req *rp){
-	
-	DIR *d;
-	struct dirent *dir;
-	char path[BUFF_DIM];
-	static int count=0;
-	int fd;
-	int size;
-	d = opendir( dirIn->dirName);
-	if(!d){
-		fprintf(stderr, "Cannot open directory %s", dirIn->dirName);
-		return -1;
-	}
-	
-	printf("\t'%s' Directory correctly opened!\n", dirIn->dirName);
-	
-	while((dir = readdir(d)) !=NULL){
-		if(dir->d_type == DT_REG){// se è un file (regolare)
-			sprintf(path, "%s/%s", dirIn->dirName, dir->d_name);
-			fd = fopen(path, "r");
-			size = lseek(fd, 0, SEEK_END); // seek to end of file
-			if(size >= dirIn->num)
-				count++;
-			close(fd);
-		} 
-	}
-
-	return (&count);
-}
-
-
-
-
-*/
 /*METODO 2: uso di stat()--> controllo tutto
 richiede:
 #include <sys/stat.h>
 */
-int *dir_scan_1_svc( dir_in *dirIn, struct svc_req *rp){
+int *dir_scan_1_svc(dir_in *dirIn, struct svc_req *rp){
 	
 	DIR *d;
 	struct dirent *dir;
 	struct stat st;
-	static int count=0;
+	static int count = 0;
+	static int error = -1;
 	char path[BUFF_DIM];
-
-	d = opendir( dirIn->dirName);
-	if(!d){
-		fprintf(stderr, "Cannot open directory %s", dirIn->dirName);
-		return -1;
-	}
 	
-	printf("\t'%s' Directory correctly opened!\n", dirIn->dirName);
-	while((dir = readdir(d)) !=NULL){
+	
+	printf("Metodo dir_scan lanciato!\n");
+	
+	d = opendir(dirIn->dirName);
+	
+	if(!d){
+		fprintf(stderr, "Errore: impossibile aprire %s!", dirIn->dirName);
+		return (&error);
+	}
+	count=0;
+	printf("'%s' Directory aperta correttamente!\n", dirIn->dirName);
+	while((dir = readdir(d)) != NULL){
+		
 		if(dir->d_name[0] != '.'){
-			sprintf(path, "%s/%s", dirIn->dirName, dir->d_name); // creo PATH = DirIn/NomeFile
-			if(stat(path, &st)==0){ //prendo le info del file di PATH path
-				if(&st.st_size > dirIn->num)
+			
+			// creo PATH = DirIn/NomeFile
+			sprintf(path, "%s/%s", dirIn->dirName, dir->d_name); 
+			
+			if(stat(path, &st) == 0){ //prendo le info del file di PATH path
+				
+				if(st.st_size > dirIn->num)
 					count++;
 			}else{
-				perror("Impossibile aprire File");			
+				perror("Impossibile aprire il file!");			
 			}
 		}	
 	}
+	
+	printf("Fine metodo dir_scan!\n");
+	
+	closedir(d);
+	
 	return (&count);
 }
