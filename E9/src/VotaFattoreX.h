@@ -38,7 +38,7 @@ struct Candidate {
 	char category;
 	char *fileName;
 	char phase;
-	int vote;
+	int score;
 };
 typedef struct Candidate Candidate;
 

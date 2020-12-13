@@ -54,7 +54,7 @@ xdr_Candidate (XDR *xdrs, Candidate *objp)
 		 return FALSE;
 	 if (!xdr_char (xdrs, &objp->phase))
 		 return FALSE;
-	 if (!xdr_int (xdrs, &objp->vote))
+	 if (!xdr_int (xdrs, &objp->score))
 		 return FALSE;
 	return TRUE;
 }

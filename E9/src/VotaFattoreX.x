@@ -17,7 +17,7 @@ string judge_name<MAXSTRLEN>;
 char category;
 string fileName<MAXSTRLEN>;
 char phase;
-int vote;
+int score;
 };
 struct Table{
 	Candidate candidate [N];
