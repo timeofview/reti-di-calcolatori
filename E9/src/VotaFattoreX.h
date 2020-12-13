@@ -13,17 +13,17 @@
 extern "C" {
 #endif
 
-#define MAXSTRLEN 15
+#define MAXSTRLEN 255
 #define N 15
 
 struct Input {
-	char candidate_len[MAXSTRLEN];
-	char operation_name[MAXSTRLEN];
+	char *candidate_name;
+	char *operation_name;
 };
 typedef struct Input Input;
 
 struct Judge {
-	char judge_name[MAXSTRLEN];
+	char *judge_name;
 };
 typedef struct Judge Judge;
 
@@ -32,25 +32,40 @@ struct Output {
 };
 typedef struct Output Output;
 
+struct Candidate {
+	char *candidate_name;
+	char *judge_name;
+	char category;
+	char *fileName;
+	char phase;
+	int vote;
+};
+typedef struct Candidate Candidate;
+
+struct Table {
+	Candidate candidate[N];
+};
+typedef struct Table Table;
+
 #define VOTAFATTORE 0x20000013
 #define VOTAFATTOREVERS 1
 
 #if defined(__STDC__) || defined(__cplusplus)
-#define CLASSIFICA_GIUDICI 1
-extern  Output * classifica_giudici_1(void *, CLIENT *);
-extern  Output * classifica_giudici_1_svc(void *, struct svc_req *);
-#define ESPRIMI_VOTO 2
-extern  int * esprimi_voto_1(Input *, CLIENT *);
-extern  int * esprimi_voto_1_svc(Input *, struct svc_req *);
+#define ranking 1
+extern  Output * ranking_1(void *, CLIENT *);
+extern  Output * ranking_1_svc(void *, struct svc_req *);
+#define vote 2
+extern  int * vote_1(Input *, CLIENT *);
+extern  int * vote_1_svc(Input *, struct svc_req *);
 extern int votafattore_1_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
 
 #else /* K&R C */
-#define CLASSIFICA_GIUDICI 1
-extern  Output * classifica_giudici_1();
-extern  Output * classifica_giudici_1_svc();
-#define ESPRIMI_VOTO 2
-extern  int * esprimi_voto_1();
-extern  int * esprimi_voto_1_svc();
+#define ranking 1
+extern  Output * ranking_1();
+extern  Output * ranking_1_svc();
+#define vote 2
+extern  int * vote_1();
+extern  int * vote_1_svc();
 extern int votafattore_1_freeresult ();
 #endif /* K&R C */
 
@@ -60,11 +75,15 @@ extern int votafattore_1_freeresult ();
 extern  bool_t xdr_Input (XDR *, Input*);
 extern  bool_t xdr_Judge (XDR *, Judge*);
 extern  bool_t xdr_Output (XDR *, Output*);
+extern  bool_t xdr_Candidate (XDR *, Candidate*);
+extern  bool_t xdr_Table (XDR *, Table*);
 
 #else /* K&R C */
 extern bool_t xdr_Input ();
 extern bool_t xdr_Judge ();
 extern bool_t xdr_Output ();
+extern bool_t xdr_Candidate ();
+extern bool_t xdr_Table ();
 
 #endif /* K&R C */
 

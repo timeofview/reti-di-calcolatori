@@ -20,7 +20,7 @@ static void
 votafattore_1(struct svc_req *rqstp, register SVCXPRT *transp)
 {
 	union {
-		Input esprimi_voto_1_arg;
+		Input vote_1_arg;
 	} argument;
 	char *result;
 	xdrproc_t _xdr_argument, _xdr_result;
@@ -31,16 +31,16 @@ votafattore_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		(void) svc_sendreply (transp, (xdrproc_t) xdr_void, (char *)NULL);
 		return;
 
-	case CLASSIFICA_GIUDICI:
+	case ranking:
 		_xdr_argument = (xdrproc_t) xdr_void;
 		_xdr_result = (xdrproc_t) xdr_Output;
-		local = (char *(*)(char *, struct svc_req *)) classifica_giudici_1_svc;
+		local = (char *(*)(char *, struct svc_req *)) ranking_1_svc;
 		break;
 
-	case ESPRIMI_VOTO:
+	case vote:
 		_xdr_argument = (xdrproc_t) xdr_Input;
 		_xdr_result = (xdrproc_t) xdr_int;
-		local = (char *(*)(char *, struct svc_req *)) esprimi_voto_1_svc;
+		local = (char *(*)(char *, struct svc_req *)) vote_1_svc;
 		break;
 
 	default:

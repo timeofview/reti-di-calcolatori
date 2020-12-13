@@ -1,19 +1,30 @@
-const MAXSTRLEN = 15;
+const MAXSTRLEN = 255;
 const N = 15;
 
 struct Input{ 
-	char candidate_len[MAXSTRLEN]; 
-	char operation_name[MAXSTRLEN]; 
+	string candidate_name<MAXSTRLEN>; 
+	string operation_name<MAXSTRLEN>; 
 };
 struct Judge{
-	char judge_name[MAXSTRLEN];
+	string judge_name<MAXSTRLEN>;
 };
 struct Output{ 
 	Judge judges[N];
 };
+struct Candidate{
+string candidate_name<MAXSTRLEN>; 
+string judge_name<MAXSTRLEN>;
+char category;
+string fileName<MAXSTRLEN>;
+char phase;
+int vote;
+};
+struct Table{
+	Candidate candidate [N];
+};
 program VOTAFATTORE {
 	version VOTAFATTOREVERS{
-		Output CLASSIFICA_GIUDICI(void) = 1;
-		int ESPRIMI_VOTO(Input) = 2;
+		Output ranking(void) = 1;
+		int vote(Input) = 2;
 	} = 1;
 } = 0x20000013;
