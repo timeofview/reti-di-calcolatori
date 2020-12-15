@@ -52,3 +52,60 @@ Table getTable()
     created = 1;
     return table;
 }
+Output *ranking_1_svc(struct svc_req *)
+{
+    if (!created)
+    {
+        getTable();
+    }
+    Output output;
+    int arr[N];
+    int count = 0;
+    int notFound = 1;
+    for (int i = 0; i < N; i++)
+    {
+        notFound = 1;
+        for (int j = 0; j < count; j++)
+        {
+            if (!strcmp(table.candidate[i].judge_name, output.judges[j].judge_name))
+            {
+                arr[j] += table.candidate[i].score;
+                notFound = 0;
+            }
+        }
+        if (notFound)
+        {
+            output.judges[count].judge_name = (char *)malloc(sizeof(table.candidate[i].judge_name));
+            strcpy(output.judges[count].judge_name, table.candidate[i].judge_name);
+            arr[count++] = table.candidate[i].score;
+        }
+    }
+    int tmp_int;
+    Judge tmp_judge;
+    int max;
+    for (int i = 0; i < count; i++)
+    {
+        max = i;
+        for (int j = i; j < count; j++)
+        {
+            if (arr[max] < arr[j])
+            {
+                max = j;
+            }
+        }
+        if (max != i)
+        {
+            tmp_judge.judge_name = (char *)malloc(sizeof(output.judges[i].judge_name));
+            strcpy(tmp_judge.judge_name, output.judges[i].judge_name);
+            output.judges[i].judge_name = (char *)malloc(sizeof(output.judges[max]));
+            strcpy(output.judges[i].judge_name, output.judges[max].judge_name);
+            output.judges[max].judge_name = (char *)malloc(sizeof(tmp_judge.judge_name));
+            strcpy(output.judges[max].judge_name, tmp_judge.judge_name);
+
+            tmp_int = arr[i];
+            arr[i] = arr[max];
+            arr[max] = tmp_int;
+        }
+    }
+    return &output;
+}
