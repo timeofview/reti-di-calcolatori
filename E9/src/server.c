@@ -1,4 +1,3 @@
-#include "VotaFattoreX.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <rpc/pmap_clnt.h>
@@ -6,6 +5,8 @@
 #include <memory.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+
+#include "VotaFattoreX.h"
 
 #define N 15
 #define CANDIDATE "candidate"
@@ -15,86 +16,165 @@ static Table table;
 static Output output;
 static int created = 0;
 
-Table getTable()
-{
-
-    if (created)
-    {
-        return table;
+/*
+insert 2 value in table
+*/
+void fill(){
+    int i;
+    for (i=0; i<2; i++){
+        char *new_str ;
+        char *str1;
+        char *str2=".txt";
+        if(i==0){
+            str1="Luca";
+            if((new_str = malloc(strlen(str1)+strlen(str2)+1)) != NULL){
+                new_str[0] = '\0';
+                strcat(new_str,str1);
+                strcat(new_str,str2);
+            } else {
+                fprintf(STDERR,"malloc failed!\n");
+            }
+            table.candidate[i].candidate_name=str1;
+            table.candidate[i].judge_name="Luca_Judge";
+            table.candidate[i].category="U";
+            table.candidate[i].fileName=new_str;
+            table.candidate[i].phase="A";
+            table.candidate[i].score=50;
+        }
+        else{
+            str1="Lucia";
+            if((new_str = malloc(strlen(str1)+strlen(str2)+1)) != NULL){
+                new_str[0] = '\0';
+                strcat(new_str,str1);
+                strcat(new_str,str2);
+            } else {
+                fprintf(STDERR,"malloc failed!\n");
+            }
+            table.candidate[i].candidate_name=str1;
+            table.candidate[i].judge_name="Lucia_Judge";
+            table.candidate[i].category="D";
+            table.candidate[i].fileName="L";
+            table.candidate[i].phase="S";
+            table.candidate[i].score=55;
+        }
     }
-    char num[255];
-    char candidate[strlen(CANDIDATE) + 3];
-    char judge[strlen(JUDGE) + 3];
-    for (int i = 0; i < N; i++)
-    {
-        /* char candidate []= "candidate";
-        sprintf(num, "%d", i);
-        strcat(num, "candidate");
-        strcpy(table.candidate[i].candidate_name, num);
-        strcpy(table.candidate[i].judge_name, strcat("judge", candidate));
-        table.candidate[i].category = 'F';
-        table.candidate[i].phase = 'F';
-        table.candidate[i].fileName = "orco.dio";
-        table.candidate[i].score = i;*/
-        sprintf(num, "%d", i);
-        sprintf(candidate, "%s%d", CANDIDATE, i);
-        sprintf(judge, "%s%d", JUDGE, i);
-        Candidate tmp;
-        table.candidate[i].candidate_name = (char *)malloc(strlen(candidate));
-        table.candidate[i].judge_name = (char *)malloc(strlen(judge));
-        strcpy(table.candidate[i].candidate_name, candidate);
-        strcpy(table.candidate[i].judge_name, judge);
-        table.candidate[i].category = 'f';
-        table.candidate[i].fileName = "orco.dio";
-        table.candidate[i].phase = 'f';
-        table.candidate[i].score = i;
-    }
-    created = 1;
-    return table;
 }
-Output *ranking_1_svc(struct svc_req *)
-{
-    if (!created)
-    {
-        getTable();
+
+void init(){ //just 1 time
+    int i;
+    if(created == 1) return;
+
+    //init table
+    for(i = 0; i < N; i++){
+        table.candidate[i].candidate_name="L";
+        table.candidate[i].judge_name="L";
+        table.candidate[i].category="L";
+        table.candidate[i].fileName="L";
+        table.candidate[i].phase="L";
+        table.candidate[i].score=-1;
     }
+
+    //fill value
+    fill();
+
+    created = 1;
+    printf("Inited!\n");
+}
+
+/*
+accept candidate and operation,
+update table,
+return result
+*/
+int *vote_1_svc(Input *in,struct svc_req *rp){
+    int result = 1;
+
+    //if it's not initialized create
+    if (!created){
+        init();
+        return result;
+    }
+
+    int i;
+    int exist=-1;
+    Candidate tmp;
+    tmp.candidate_name=in->candidate_name;
+    int op;
+    if (in->operation_name=="add")
+        op=1;
+    if (in->operation_name=="sub")
+        op=2;
+
+    //foreach entry in table
+    for (i = 0; i < N; i++){
+        if(strcmp(table.candidate[i].candidate_name,tmp.candidate_name)==0)
+            exist=i;
+    }  
+
+    if(exist>=0){
+        if(op==1)
+            table.candidate[exist].score++;
+        else
+            table.candidate[exist].score--;
+        if (table.candidate[exist].score<0>||table.candidate[exist].score>100=
+            result=-1;
+    }
+    else{//da implementare?}
+    
+    return result;
+}
+
+/*
+Return Output struct,
+sorted by candidate rank
+*/
+Output *ranking_1_svc(struct svc_req *rp){
+    //if it's not initialized create
+    if (!created){
+        init();
+    }
+
+    //var init
     Output output;
     int arr[N];
     int count = 0;
     int notFound = 1;
-    for (int i = 0; i < N; i++)
-    {
+
+    //foreach entry in arr
+    for (int i = 0; i < N; i++){
         notFound = 1;
-        for (int j = 0; j < count; j++)
-        {
-            if (!strcmp(table.candidate[i].judge_name, output.judges[j].judge_name))
-            {
+        //count rank foreach judge
+        for (int j = 0; j < count; j++){
+            if (!strcmp(table.candidate[i].judge_name, output.judges[j].judge_name)){
                 arr[j] += table.candidate[i].score;
                 notFound = 0;
             }
         }
-        if (notFound)
-        {
+
+        //if notFound add an entry
+        if (notFound){
             output.judges[count].judge_name = (char *)malloc(sizeof(table.candidate[i].judge_name));
             strcpy(output.judges[count].judge_name, table.candidate[i].judge_name);
             arr[count++] = table.candidate[i].score;
         }
     }
+
+    //var init for sorting
     int tmp_int;
     Judge tmp_judge;
     int max;
-    for (int i = 0; i < count; i++)
-    {
+
+    //finding the max
+    for (int i = 0; i < count; i++){
         max = i;
-        for (int j = i; j < count; j++)
-        {
-            if (arr[max] < arr[j])
-            {
+        for (int j = i; j < count; j++){
+            if (arr[max] < arr[j]){
                 max = j;
             }
         }
-        if (max != i)
-        {
+
+        //if not max -> swap
+        if (max != i){
             tmp_judge.judge_name = (char *)malloc(sizeof(output.judges[i].judge_name));
             strcpy(tmp_judge.judge_name, output.judges[i].judge_name);
             output.judges[i].judge_name = (char *)malloc(sizeof(output.judges[max]));
@@ -107,5 +187,5 @@ Output *ranking_1_svc(struct svc_req *)
             arr[max] = tmp_int;
         }
     }
-    return &output;
+    return (&output);
 }
