@@ -5,34 +5,23 @@
 #include <memory.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <rpc/rpc.h>
+#include <sys/dir.h>
 
 #include "VotaFattoreX.h"
 
-#define MAX_STR 255
-#define N 15
-#define CANDIDATE "candidate"
-#define JUDGE "judge"
-
-// Da ritornare
 static Table table;
-
 static int created = 0;
 
-// Puts 2 values in the table
 void fill() {
-
     int i;
 
     for (i = 0; i < 2; i++) {
-        char new_str[MAX_STR];
-        char str1[MAX_STR];
-        
+        char new_str[MAXSTRLEN];
+        char str1[MAXSTRLEN];
         if (i == 0) {
-
             strcpy(str1, "Luca");
             sprintf(new_str, "%s.txt", str1); 
-
-            
             strcpy(table.candidate[i].candidate_name, str1);
             strcpy(table.candidate[i].judge_name, "Luca_Judge");
             table.candidate[i].category = 'U';
@@ -41,11 +30,8 @@ void fill() {
             table.candidate[i].score = 50;
         }
         else {
-			
             strcpy(str1, "Lucia");
-           
             sprintf(new_str, "%s.txt", str1);
-
             strcpy(table.candidate[i].candidate_name, str1);
             strcpy(table.candidate[i].judge_name,"Lucia_Judge");
             table.candidate[i].category = 'D';
@@ -53,19 +39,15 @@ void fill() {
             table.candidate[i].phase = 'S';
             table.candidate[i].score = 55;
         }
-
-    }
-    
+    } 
 }
 
-// Executed once
 void init() {
-	
-    int i;
     if (created == 1)
         return;
 
-    //init table
+    int i;
+
     for (i = 0; i < N; i++) {
         strcpy(table.candidate[i].candidate_name, "L");
         strcpy(table.candidate[i].judge_name, "L");
@@ -74,116 +56,64 @@ void init() {
         table.candidate[i].phase = 'L';
         table.candidate[i].score = -1;
     }
-
-    //fill value
     fill();
-
     created = 1;
     printf("Inited!\n");
 }
 
-// Accept candidate and operation,
-// Update table,
-// Returns result
-int* vote_1_svc(Input* in, struct svc_req* rp) {
-
-    int result = 1;
-
-    //if it's not initialized create
-    if (!created) {
-        init();
-        return result;
-    }
-
-    int i;
-    int exist = -1;
-    Candidate tmp;
-    strcpy(tmp.candidate_name,  in->candidate_name);
+int* vote_1_svc(Input* in, struct svc_req *rqstp) {
+    init();
+    static int result = 1;
+    int i, op, exist = -1;
     
-    int op;
     if (strcmp(in->operation_name, "add") == 0)
         op = 1;
     if (strcmp(in->operation_name, "sub") == 0)
         op = 2;
 
-    // For each entry in table
-    for (i = 0; i < N; i++) {
-        if (strcmp(table.candidate[i].candidate_name, tmp.candidate_name) == 0)
+    for (i = 0; i < N; i++)
+        if (strcmp(table.candidate[i].candidate_name, in->candidate_name) == 0)
             exist = i;
-    }
 
     if (exist >= 0) {
-		
-        if (op == 1) {
+        if (op == 1)
             table.candidate[exist].score++;
-        }else {
+        else
             table.candidate[exist].score--;
-        }
 
-        if (table.candidate[exist].score < 0 || table.candidate[exist].score > 100) {
+        if (table.candidate[exist].score < 0 || table.candidate[exist].score > 100) 
             result = -1;
-        }
     }
-    else { // Da implementare?
-    }
-
-    return result;
+    else 
+        result = -1;
+    printf("Sending Result\n");
+    return (&result);
 }
 
-// Returns Output struct sorted by candidate rank
-Output *ranking_1_svc(void *p, struct svc_req *rp) {
-	
+Output* ranking_1_svc(void *in, struct svc_req *rqstp) {
+	init();    
 	static Output output;
-	
-	
-    // If it's not initialized, then create one
-    if (!created) {
-        init();
-    }
-
-    // Var init
-    int arr[N];
-    int count = 0;
-    int notFound = 1;
-    int i;
-	
-	printf("Sono prima del primo ciclo\n");
-	
-	// Inizializzo boh
-	for(i=0; i<N; i++){
-		strcpy(output.judges[i].judge_name, "L");
-	}
-	
-	printf("Sono prima del secondo ciclo\n");
-	
-    // Foreach entry in array
+    int count = 0, notFound = 1;
+    int i, j, arr[N];
+        
     for (i = 0; i < N; i++) {
-		
         notFound = 1;
         
-        // Count rank foreach judge
-        for (int j = 0; j < count; j++) {
+        for (j = 0; j < count; j++) {
             if (!strcmp(table.candidate[i].judge_name, output.judges[j].judge_name)) {
                 arr[j] += table.candidate[i].score;
                 notFound = 0;
             }
         }
-
-        // If notFound add an entry
         if (notFound) {
             strcpy(output.judges[count].judge_name, table.candidate[i].judge_name);
             arr[count++] = table.candidate[i].score;
         }
     }
 
-    // Var init for sorting
-    int tmp_int;
+    int tmp_int, max;
     Judge tmp_judge;
-    int max;
-	
-	printf("Sono prima del terzo ciclo!\n");
-	
-    // Finding the max
+		
     for (i = 0; i < count; i++) {
         max = i;
         for (int j = i; j < count; j++) {
@@ -192,7 +122,6 @@ Output *ranking_1_svc(void *p, struct svc_req *rp) {
             }
         }
 
-        // If not max -> swap
         if (max != i) {
             strcpy(tmp_judge.judge_name, output.judges[i].judge_name);
             strcpy(output.judges[i].judge_name, output.judges[max].judge_name);
@@ -203,16 +132,6 @@ Output *ranking_1_svc(void *p, struct svc_req *rp) {
             arr[max] = tmp_int;
         }
     }
-    
-    printf("Sono prima del quarto ciclo!\n");
-    
-    // Ora stampo a video tutti i giudici
-	for(i = 0; i<N; i++){
-		printf("Sono nel ciclo %d\n", i);
-		printf("Nome giudice: %s\n", output.judges[i].judge_name);
-	}
-    
-    printf("Sono prima del return!\n");
-    
+    printf("Sending Judges Ranking\n");
     return (&output);
 }
